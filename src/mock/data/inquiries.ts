@@ -47,6 +47,7 @@ export interface Inquiry {
   title: string;
   category: string;
   subCategory: string;
+  region: string;
   requesterId: string;
   requesterName: string;
   department: string;
@@ -80,6 +81,7 @@ export const inquiries: Inquiry[] = [
     title: '工业控制芯片采购项目',
     category: '电子元器件',
     subCategory: '芯片/集成电路',
+    region: '亚太',
     requesterId: 'U002',
     requesterName: '李明华',
     department: '采购部',
@@ -187,6 +189,7 @@ export const inquiries: Inquiry[] = [
     title: 'PLC控制器年度采购项目',
     category: '机械设备',
     subCategory: '工业自动化设备',
+    region: '亚太',
     requesterId: 'U002',
     requesterName: '李明华',
     department: '采购部',
@@ -251,6 +254,7 @@ export const inquiries: Inquiry[] = [
     title: '工业机器人采购项目',
     category: '机械设备',
     subCategory: '工业机器人',
+    region: '亚太',
     requesterId: 'U002',
     requesterName: '李明华',
     department: '采购部',
@@ -320,6 +324,7 @@ export const inquiries: Inquiry[] = [
     title: '特种钢材采购项目',
     category: '原材料',
     subCategory: '钢材',
+    region: '欧洲',
     requesterId: 'U002',
     requesterName: '李明华',
     department: '采购部',
@@ -358,6 +363,7 @@ export const inquiries: Inquiry[] = [
     title: '图像传感器批量采购',
     category: '电子元器件',
     subCategory: '图像传感器',
+    region: '北美',
     requesterId: 'U002',
     requesterName: '李明华',
     department: '采购部',
@@ -412,6 +418,7 @@ export const inquiries: Inquiry[] = [
     title: '功率半导体器件采购',
     category: '电子元器件',
     subCategory: '功率半导体',
+    region: '亚太',
     requesterId: 'U002',
     requesterName: '李明华',
     department: '采购部',
@@ -466,6 +473,7 @@ export const inquiries: Inquiry[] = [
     title: '无缝钢管采购项目',
     category: '原材料',
     subCategory: '无缝钢管',
+    region: '亚太',
     requesterId: 'U002',
     requesterName: '李明华',
     department: '采购部',
@@ -504,6 +512,7 @@ export const inquiries: Inquiry[] = [
     title: '汽车电子部件采购',
     category: '电子元器件',
     subCategory: '汽车电子',
+    region: '亚太',
     requesterId: 'U002',
     requesterName: '李明华',
     department: '采购部',
@@ -568,6 +577,7 @@ export const inquiries: Inquiry[] = [
     title: '半导体存储器采购',
     category: '电子元器件',
     subCategory: '存储器芯片',
+    region: '欧洲',
     requesterId: 'U002',
     requesterName: '李明华',
     department: '采购部',
@@ -637,6 +647,7 @@ export const inquiries: Inquiry[] = [
     title: '低压电器采购项目',
     category: '机械设备',
     subCategory: '低压电器',
+    region: '北美',
     requesterId: 'U002',
     requesterName: '李明华',
     department: '采购部',

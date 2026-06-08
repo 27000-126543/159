@@ -132,7 +132,7 @@ export const users: User[] = [
     status: 'active',
     createdAt: '2023-01-10T00:00:00Z',
     lastLoginAt: '2024-01-15T08:30:00Z',
-    regions: ['华东区', '华南区', '华北区'],
+    regions: ['亚太', '欧洲'],
   },
   {
     id: 'U008',

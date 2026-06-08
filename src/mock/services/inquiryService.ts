@@ -1,37 +1,48 @@
 import { inquiries as inquiriesData, Inquiry, Quote, NegotiationRecord } from '../data/inquiries';
 import { userService } from './userService';
+import { User } from '../data/users';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const applyPermissionFilter = async (list: Inquiry[]): Promise<Inquiry[]> => {
+const applyPermissionFilter = async (list: Inquiry[], currentUserRole?: string, currentUserRegions?: string[]): Promise<Inquiry[]> => {
   try {
-    const user = await userService.getCurrentUser();
+    const user = currentUserRole ? { role: currentUserRole as User['role'], regions: currentUserRegions } : await userService.getCurrentUser();
     if (!user) return list;
 
     switch (user.role) {
       case 'ceo':
       case 'admin':
-      case 'finance':
-      case 'quality':
-      case 'director':
         return list;
 
-      case 'supplier':
-        if (!user.supplierId) return [];
+      case 'finance':
+      case 'quality':
+        return list;
+
+      case 'director':
+        if (!user.regions || user.regions.length === 0 || user.regions.includes('*')) return list;
         return list.filter(inquiry =>
-          inquiry.quotes?.some(quote => quote.supplierId === user.supplierId)
+          user.regions!.includes(inquiry.region)
+        );
+
+      case 'supplier':
+        const currentUser = await userService.getCurrentUser();
+        if (!currentUser?.supplierId) return [];
+        return list.filter(inquiry =>
+          inquiry.quotes?.some(quote => quote.supplierId === currentUser.supplierId)
         );
 
       case 'buyer':
-        if (!user.categories || user.categories.length === 0) return [];
+        const buyerUser = await userService.getCurrentUser();
+        if (!buyerUser?.categories || buyerUser.categories.length === 0) return [];
         return list.filter(inquiry =>
-          user.categories!.includes(inquiry.category)
+          buyerUser.categories!.includes(inquiry.category)
         );
 
       case 'manager':
-        if (!user.department) return list;
+        const managerUser = await userService.getCurrentUser();
+        if (!managerUser?.department) return list;
         return list.filter(inquiry =>
-          inquiry.department === user.department
+          inquiry.department === managerUser.department
         );
 
       default:
@@ -92,7 +103,7 @@ export interface PriceComparisonResult {
 }
 
 export const inquiryService = {
-  async getInquiryList(params?: InquiryQueryParams): Promise<{
+  async getInquiryList(params?: InquiryQueryParams, currentUserRole?: string, currentUserRegions?: string[]): Promise<{
     list: Inquiry[];
     total: number;
     page: number;
@@ -130,7 +141,7 @@ export const inquiryService = {
       result = result.filter(i => i.createdAt <= params.endDate!);
     }
     
-    result = await applyPermissionFilter(result);
+    result = await applyPermissionFilter(result, currentUserRole, currentUserRegions);
     
     const total = result.length;
     const page = params?.page || 1;

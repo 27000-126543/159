@@ -22,6 +22,30 @@ import Select from '@/components/ui/Select';
 import Badge from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
 
+const countryToRegion: Record<string, string> = {
+  '中国': '亚太',
+  '日本': '亚太',
+  '韩国': '亚太',
+  '新加坡': '亚太',
+  '印度': '亚太',
+  '澳大利亚': '亚太',
+  '德国': '欧洲',
+  '法国': '欧洲',
+  '英国': '欧洲',
+  '意大利': '欧洲',
+  '西班牙': '欧洲',
+  '荷兰': '欧洲',
+  '瑞士': '欧洲',
+  '瑞典': '欧洲',
+  '美国': '北美',
+  '加拿大': '北美',
+  '墨西哥': '北美',
+  '巴西': '南美',
+  '阿根廷': '南美',
+  '南非': '非洲',
+  '埃及': '非洲',
+};
+
 const steps = [
   { key: 'basic', label: '基本信息', icon: Building2, description: '填写企业基本信息' },
   { key: 'qualification', label: '资质信息', icon: FileText, description: '上传企业资质文件' },
@@ -250,6 +274,7 @@ export default function SupplierRegister() {
         subCategory: formData.capacity.subCategory,
         country: formData.basic.country,
         countryCode: formData.basic.country === '中国' ? 'CN' : 'US',
+        region: countryToRegion[formData.basic.country] || '亚太',
         city: formData.basic.city,
         address: formData.basic.address,
         contactPerson: formData.basic.contactPerson,

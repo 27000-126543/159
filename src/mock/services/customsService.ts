@@ -101,8 +101,19 @@ export const customsService = {
     return customs || null;
   },
   
+  async getCustomsByOrderId(orderId: string): Promise<Customs | null> {
+    await delay(200);
+    const customs = customsData.find(c => c.orderId === orderId);
+    return customs || null;
+  },
+  
   async createCustoms(data: CustomsCreateData): Promise<Customs> {
     await delay(800);
+    
+    const existing = await this.getCustomsByOrderId(data.orderId);
+    if (existing) {
+      return existing;
+    }
     
     const newId = `C${String(customsData.length + 1).padStart(3, '0')}`;
     const newCode = `CUS-${new Date().getFullYear()}-${String(customsData.length + 1).padStart(3, '0')}`;

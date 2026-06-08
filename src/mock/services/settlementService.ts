@@ -379,28 +379,44 @@ export const settlementService = {
     settlement.unpaidAmount = Math.max(0, settlement.unpaidAmount - paidAmount);
     settlement.actualPaymentDate = paidAt;
 
-    if (settlement.unpaidAmount <= 0) {
+    const isFullyPaid = settlement.unpaidAmount <= 0;
+
+    if (isFullyPaid) {
       settlement.paymentStatus = 'paid';
       settlement.status = 'completed';
     }
 
     settlement.updatedAt = new Date().toISOString();
 
-    const otherOverdueSettlements = settlementData.filter(
-      s => s.supplierId === settlement.supplierId && 
-           s.id !== settlement.id && 
-           s.paymentStatus === 'overdue'
-    );
-
-    if (otherOverdueSettlements.length === 0) {
-      await supplierService.unfreezeSupplier(settlement.supplierId);
-    }
-
-    const alertIndex = dashboardData.alertMessages.findIndex(
+    const existingAlert = dashboardData.alertMessages.find(
       a => a.relatedId === settlement.id && a.relatedType === 'settlement_overdue'
     );
-    if (alertIndex !== -1) {
-      dashboardData.alertMessages.splice(alertIndex, 1);
+
+    if (isFullyPaid) {
+      const otherOverdueSettlements = settlementData.filter(
+        s => s.supplierId === settlement.supplierId && 
+             s.id !== settlement.id && 
+             s.paymentStatus === 'overdue'
+      );
+
+      if (otherOverdueSettlements.length === 0) {
+        await supplierService.unfreezeSupplier(settlement.supplierId);
+      }
+
+      if (existingAlert) {
+        const alertIndex = dashboardData.alertMessages.findIndex(
+          a => a.relatedId === settlement.id && a.relatedType === 'settlement_overdue'
+        );
+        if (alertIndex !== -1) {
+          dashboardData.alertMessages.splice(alertIndex, 1);
+        }
+      }
+    } else {
+      if (existingAlert) {
+        existingAlert.content = `结算单${settlement.code}（供应商：${settlement.supplierName}）部分付款，已付 ${settlement.currency} ${paidAmount.toLocaleString()}，剩余未付 ${settlement.currency} ${settlement.unpaidAmount.toLocaleString()}，供应商仍冻结。`;
+        existingAlert.timestamp = new Date().toISOString();
+        existingAlert.isRead = false;
+      }
     }
 
     return { success: true, message: '付款登记成功', settlement };

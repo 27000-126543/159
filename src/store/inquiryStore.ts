@@ -7,6 +7,7 @@ import {
   PriceComparisonResult,
 } from '@/mock/services/inquiryService';
 import { Inquiry, Quote, NegotiationRecord } from '@/mock/data/inquiries';
+import { useUserStore } from '@/store/userStore';
 
 export interface InquiryState {
   inquiries: Inquiry[];
@@ -60,7 +61,10 @@ export const useInquiryStore = create<InquiryState & InquiryActions>((set, get) 
     set({ loading: true, error: null });
     try {
       const mergedParams = { ...get().filterParams, ...params };
-      const result = await inquiryService.getInquiryList(mergedParams);
+      const currentUser = useUserStore.getState().user;
+      const currentUserRole = currentUser?.role;
+      const currentUserRegions = currentUser?.regions;
+      const result = await inquiryService.getInquiryList(mergedParams, currentUserRole, currentUserRegions);
       set({
         inquiries: result.list,
         total: result.total,

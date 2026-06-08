@@ -29,6 +29,7 @@ export interface Order {
   inquiryCode: string;
   category: string;
   subCategory: string;
+  region: string;
   supplierId: string;
   supplierName: string;
   buyerId: string;
@@ -58,6 +59,7 @@ export interface Order {
   hasQualityIssue: boolean;
   hasCustomsIssue: boolean;
   hasLogisticsIssue: boolean;
+  completedAt: string;
 }
 
 export const orders: Order[] = [
@@ -69,6 +71,7 @@ export const orders: Order[] = [
     inquiryCode: 'INQ-2024-0001',
     category: '电子元器件',
     subCategory: '芯片/集成电路',
+    region: '亚太',
     supplierId: 'S001',
     supplierName: '深圳华为技术有限公司',
     buyerId: 'U002',
@@ -153,6 +156,7 @@ export const orders: Order[] = [
     hasQualityIssue: false,
     hasCustomsIssue: false,
     hasLogisticsIssue: false,
+    completedAt: '2024-02-15T16:00:00Z',
   },
   {
     id: 'O002',
@@ -162,6 +166,7 @@ export const orders: Order[] = [
     inquiryCode: 'INQ-2024-0005',
     category: '电子元器件',
     subCategory: '图像传感器',
+    region: '亚太',
     supplierId: 'S004',
     supplierName: '索尼集团',
     buyerId: 'U002',
@@ -236,6 +241,7 @@ export const orders: Order[] = [
     hasQualityIssue: false,
     hasCustomsIssue: true,
     hasLogisticsIssue: false,
+    completedAt: '2024-03-01T10:00:00Z',
   },
   {
     id: 'O003',
@@ -245,6 +251,7 @@ export const orders: Order[] = [
     inquiryCode: 'INQ-2024-0002',
     category: '机械设备',
     subCategory: '工业自动化设备',
+    region: '亚太',
     supplierId: 'S002',
     supplierName: '西门子（中国）有限公司',
     buyerId: 'U002',
@@ -308,6 +315,7 @@ export const orders: Order[] = [
     hasQualityIssue: false,
     hasCustomsIssue: false,
     hasLogisticsIssue: false,
+    completedAt: '',
   },
   {
     id: 'O004',
@@ -317,6 +325,7 @@ export const orders: Order[] = [
     inquiryCode: 'INQ-2024-0010',
     category: '机械设备',
     subCategory: '低压电器',
+    region: '欧洲',
     supplierId: 'S007',
     supplierName: '施耐德电气',
     buyerId: 'U002',
@@ -390,6 +399,7 @@ export const orders: Order[] = [
     hasQualityIssue: false,
     hasCustomsIssue: false,
     hasLogisticsIssue: false,
+    completedAt: '2024-02-28T11:00:00Z',
   },
   {
     id: 'O005',
@@ -399,6 +409,7 @@ export const orders: Order[] = [
     inquiryCode: 'INQ-2024-0009',
     category: '电子元器件',
     subCategory: '存储器芯片',
+    region: '北美',
     supplierId: 'S005',
     supplierName: '三星电子',
     buyerId: 'U002',
@@ -451,6 +462,7 @@ export const orders: Order[] = [
     hasQualityIssue: false,
     hasCustomsIssue: false,
     hasLogisticsIssue: false,
+    completedAt: '',
   },
   {
     id: 'O006',
@@ -460,6 +472,7 @@ export const orders: Order[] = [
     inquiryCode: 'INQ-2024-0004',
     category: '原材料',
     subCategory: '钢材',
+    region: '亚太',
     supplierId: 'S006',
     supplierName: '宝钢股份有限公司',
     buyerId: 'U002',
@@ -534,6 +547,7 @@ export const orders: Order[] = [
     hasQualityIssue: true,
     hasCustomsIssue: false,
     hasLogisticsIssue: false,
+    completedAt: '',
   },
   {
     id: 'O007',
@@ -543,6 +557,7 @@ export const orders: Order[] = [
     inquiryCode: 'INQ-2024-0006',
     category: '电子元器件',
     subCategory: '功率半导体',
+    region: '亚太',
     supplierId: 'S008',
     supplierName: '英飞凌科技',
     buyerId: 'U002',
@@ -617,6 +632,7 @@ export const orders: Order[] = [
     hasQualityIssue: false,
     hasCustomsIssue: false,
     hasLogisticsIssue: false,
+    completedAt: '',
   },
   {
     id: 'O008',
@@ -626,6 +642,7 @@ export const orders: Order[] = [
     inquiryCode: '',
     category: '其他',
     subCategory: '办公耗材',
+    region: '亚太',
     supplierId: 'S009',
     supplierName: '富士康科技集团',
     buyerId: 'U002',
@@ -688,6 +705,7 @@ export const orders: Order[] = [
     hasQualityIssue: false,
     hasCustomsIssue: false,
     hasLogisticsIssue: false,
+    completedAt: '2024-02-16T10:00:00Z',
   },
   {
     id: 'O009',
@@ -697,6 +715,7 @@ export const orders: Order[] = [
     inquiryCode: 'INQ-2024-0003',
     category: '机械设备',
     subCategory: '工业机器人',
+    region: '欧洲',
     supplierId: 'S010',
     supplierName: '三菱电机',
     buyerId: 'U002',
@@ -737,6 +756,7 @@ export const orders: Order[] = [
     hasQualityIssue: false,
     hasCustomsIssue: false,
     hasLogisticsIssue: false,
+    completedAt: '',
   },
   {
     id: 'O010',
@@ -746,6 +766,7 @@ export const orders: Order[] = [
     inquiryCode: 'INQ-2024-0007',
     category: '原材料',
     subCategory: '无缝钢管',
+    region: '北美',
     supplierId: 'S011',
     supplierName: '天津钢管集团',
     buyerId: 'U002',
@@ -786,6 +807,7 @@ export const orders: Order[] = [
     hasQualityIssue: false,
     hasCustomsIssue: false,
     hasLogisticsIssue: false,
+    completedAt: '',
   },
   {
     id: 'O011',
@@ -795,6 +817,7 @@ export const orders: Order[] = [
     inquiryCode: 'INQ-2024-0008',
     category: '电子元器件',
     subCategory: '汽车电子',
+    region: '亚太',
     supplierId: 'S018',
     supplierName: '博世集团',
     buyerId: 'U002',
@@ -869,6 +892,7 @@ export const orders: Order[] = [
     hasQualityIssue: false,
     hasCustomsIssue: false,
     hasLogisticsIssue: false,
+    completedAt: '',
   },
   {
     id: 'O012',
@@ -878,6 +902,7 @@ export const orders: Order[] = [
     inquiryCode: '',
     category: '原材料',
     subCategory: '化工原料',
+    region: '亚太',
     supplierId: 'S014',
     supplierName: '杜邦公司',
     buyerId: 'U002',
@@ -941,6 +966,7 @@ export const orders: Order[] = [
     hasQualityIssue: false,
     hasCustomsIssue: true,
     hasLogisticsIssue: true,
+    completedAt: '',
   },
   {
     id: 'O013',
@@ -950,6 +976,7 @@ export const orders: Order[] = [
     inquiryCode: '',
     category: '电子元器件',
     subCategory: '电子元件',
+    region: '亚太',
     supplierId: 'S015',
     supplierName: '松下电器',
     buyerId: 'U002',
@@ -1012,6 +1039,7 @@ export const orders: Order[] = [
     hasQualityIssue: false,
     hasCustomsIssue: false,
     hasLogisticsIssue: false,
+    completedAt: '2024-03-05T10:00:00Z',
   },
   {
     id: 'O014',
@@ -1021,6 +1049,7 @@ export const orders: Order[] = [
     inquiryCode: '',
     category: '原材料',
     subCategory: '有色金属',
+    region: '欧洲',
     supplierId: 'S017',
     supplierName: '中国铝业集团',
     buyerId: 'U002',
@@ -1095,6 +1124,7 @@ export const orders: Order[] = [
     hasQualityIssue: false,
     hasCustomsIssue: false,
     hasLogisticsIssue: false,
+    completedAt: '',
   },
   {
     id: 'O015',
@@ -1104,6 +1134,7 @@ export const orders: Order[] = [
     inquiryCode: '',
     category: '电子元器件',
     subCategory: '汽车电子',
+    region: '北美',
     supplierId: 'S016',
     supplierName: '法雷奥集团',
     buyerId: 'U002',
@@ -1178,6 +1209,7 @@ export const orders: Order[] = [
     hasQualityIssue: false,
     hasCustomsIssue: false,
     hasLogisticsIssue: false,
+    completedAt: '',
   },
 ];
 

@@ -117,6 +117,11 @@ export const logisticsService = {
   async createLogisticsPlan(data: LogisticsCreateData): Promise<Logistics> {
     await delay(800);
     
+    const existing = await this.getLogisticsByOrderId(data.orderId);
+    if (existing) {
+      return existing;
+    }
+    
     const newId = `L${String(logisticsData.length + 1).padStart(3, '0')}`;
     const newCode = `LOG-${new Date().getFullYear()}-${String(logisticsData.length + 1).padStart(3, '0')}`;
     const newTrackingNo = `TRK${Date.now()}${Math.random().toString(36).substr(2, 4).toUpperCase()}`;

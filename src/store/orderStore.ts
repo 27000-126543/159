@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { orderService, OrderQueryParams, OrderCreateData, ApprovalSubmitData } from '@/mock/services/orderService';
 import { Order, OrderItem, ApprovalRecord } from '@/mock/data/orders';
+import { useUserStore } from '@/store/userStore';
 
 export interface OrderState {
   orders: Order[];
@@ -53,7 +54,10 @@ export const useOrderStore = create<OrderState & OrderActions>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const mergedParams = { ...get().filterParams, ...params };
-      const result = await orderService.getOrderList(mergedParams);
+      const currentUser = useUserStore.getState().user;
+      const currentUserRole = currentUser?.role;
+      const currentUserRegions = currentUser?.regions;
+      const result = await orderService.getOrderList(mergedParams, currentUserRole, currentUserRegions);
       set({
         orders: result.list,
         total: result.total,
@@ -198,21 +202,18 @@ export const useOrderStore = create<OrderState & OrderActions>((set, get) => ({
   updateOrderStatus: async (id, status) => {
     set({ loading: true, error: null });
     try {
-      const order = await orderService.getOrderById(id);
-      if (order) {
-        const updatedOrder = await orderService.updateOrder(id, { status });
-        if (updatedOrder) {
-          set((state) => ({
-            currentOrder: updatedOrder,
-            orders: state.orders.map((o) =>
-              o.id === id ? updatedOrder : o
-            ),
-            loading: false,
-          }));
-          return updatedOrder;
-        }
+      const updatedOrder = await orderService.updateOrderStatus(id, status);
+      if (updatedOrder) {
+        set((state) => ({
+          currentOrder: updatedOrder,
+          orders: state.orders.map((o) =>
+            o.id === id ? updatedOrder : o
+          ),
+          loading: false,
+        }));
+        return updatedOrder;
       }
-      set({ error: '更新状态失败', loading: false });
+      set({ error: '更新状态失败，订单不存在或状态流转不合法', loading: false });
       return null;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '更新订单状态失败';

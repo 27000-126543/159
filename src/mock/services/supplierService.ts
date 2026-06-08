@@ -1,26 +1,35 @@
 import { suppliers as suppliersData, Supplier } from '../data/suppliers';
 import { userService } from './userService';
+import { User } from '../data/users';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const applyPermissionFilter = async (list: Supplier[]): Promise<Supplier[]> => {
+const applyPermissionFilter = async (list: Supplier[], currentUserRole?: string, currentUserRegions?: string[]): Promise<Supplier[]> => {
   try {
-    const user = await userService.getCurrentUser();
+    const user = currentUserRole ? { role: currentUserRole as User['role'], regions: currentUserRegions } : await userService.getCurrentUser();
     if (!user) return list;
 
     switch (user.role) {
       case 'ceo':
       case 'admin':
+        return list;
+
       case 'finance':
       case 'quality':
-      case 'director':
       case 'manager':
       case 'buyer':
         return list;
 
+      case 'director':
+        if (!user.regions || user.regions.length === 0 || user.regions.includes('*')) return list;
+        return list.filter(supplier =>
+          user.regions!.includes(supplier.region)
+        );
+
       case 'supplier':
-        if (!user.supplierId) return [];
-        return list.filter(supplier => supplier.id === user.supplierId);
+        const currentUser = await userService.getCurrentUser();
+        if (!currentUser?.supplierId) return [];
+        return list.filter(supplier => supplier.id === currentUser.supplierId);
 
       default:
         return list;
@@ -48,7 +57,7 @@ export interface PaginatedResult<T> {
 }
 
 export const supplierService = {
-  async getSupplierList(params?: SupplierQueryParams): Promise<PaginatedResult<Supplier>> {
+  async getSupplierList(params?: SupplierQueryParams, currentUserRole?: string, currentUserRegions?: string[]): Promise<PaginatedResult<Supplier>> {
     await delay(600);
     
     let result = [...suppliersData];
@@ -78,7 +87,7 @@ export const supplierService = {
       result = result.filter(s => s.qualificationStatus === params.qualificationStatus);
     }
     
-    result = await applyPermissionFilter(result);
+    result = await applyPermissionFilter(result, currentUserRole, currentUserRegions);
     
     const total = result.length;
     const page = params?.page || 1;

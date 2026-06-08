@@ -204,16 +204,26 @@ export const useApprovalStore = create<ApprovalState & ApprovalActions>((set, ge
       const result = await orderService.approveOrder(approverData);
 
       if (result) {
-        set((state) => ({
-          pendingApprovals: state.pendingApprovals.filter((a) => a.id !== id),
-          pendingCount: state.pendingCount - 1,
-          approvedApprovals: [
-            { ...approvalItem, status: 'approved' as const },
-            ...state.approvedApprovals,
-          ],
-          approvedCount: state.approvedCount + 1,
-          loading: false,
-        }));
+        const isLastNode = result.status === 'approved' || result.currentApprovalNode === '';
+
+        if (isLastNode) {
+          const approvedItem = mapOrderToApprovalItem(result, 'approved');
+          set((state) => ({
+            pendingApprovals: state.pendingApprovals.filter((a) => a.id !== id),
+            pendingCount: state.pendingCount - 1,
+            approvedApprovals: [approvedItem, ...state.approvedApprovals],
+            approvedCount: state.approvedCount + 1,
+            loading: false,
+          }));
+        } else {
+          const updatedItem = mapOrderToApprovalItem(result, 'pending');
+          set((state) => ({
+            pendingApprovals: state.pendingApprovals.map((a) =>
+              a.id === id ? updatedItem : a
+            ),
+            loading: false,
+          }));
+        }
         return { success: true, message: '审批通过' };
       } else {
         set({ error: '审批失败，订单不存在或状态不允许', loading: false });
@@ -249,13 +259,11 @@ export const useApprovalStore = create<ApprovalState & ApprovalActions>((set, ge
       const result = await orderService.approveOrder(approverData);
 
       if (result) {
+        const rejectedItem = mapOrderToApprovalItem(result, 'rejected');
         set((state) => ({
           pendingApprovals: state.pendingApprovals.filter((a) => a.id !== id),
           pendingCount: state.pendingCount - 1,
-          rejectedApprovals: [
-            { ...approvalItem, status: 'rejected' as const },
-            ...state.rejectedApprovals,
-          ],
+          rejectedApprovals: [rejectedItem, ...state.rejectedApprovals],
           rejectedCount: state.rejectedCount + 1,
           loading: false,
         }));

@@ -5,6 +5,7 @@ import {
   PaginatedResult,
 } from '@/mock/services/supplierService';
 import { Supplier } from '@/mock/data/suppliers';
+import { useUserStore } from '@/store/userStore';
 
 export interface SupplierState {
   suppliers: Supplier[];
@@ -75,7 +76,10 @@ export const useSupplierStore = create<SupplierState & SupplierActions>((set, ge
     set({ loading: true, error: null });
     try {
       const mergedParams = { ...get().filterParams, ...params };
-      const result: PaginatedResult<Supplier> = await supplierService.getSupplierList(mergedParams);
+      const currentUser = useUserStore.getState().user;
+      const currentUserRole = currentUser?.role;
+      const currentUserRegions = currentUser?.regions;
+      const result: PaginatedResult<Supplier> = await supplierService.getSupplierList(mergedParams, currentUserRole, currentUserRegions);
       set({
         suppliers: result.list,
         total: result.total,

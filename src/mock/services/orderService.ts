@@ -1,37 +1,111 @@
 import { ordersData, Order, OrderItem, ApprovalRecord } from '../data/orders';
-import { customsService } from './customsService';
-import { logisticsService } from './logisticsService';
+import { customsService, CustomsCreateData } from './customsService';
+import { logisticsService, LogisticsCreateData } from './logisticsService';
 import { userService } from './userService';
+import { User } from '../data/users';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const applyPermissionFilter = async (list: Order[]): Promise<Order[]> => {
+const generateCustomsDeclaration = (order: Order): CustomsCreateData => {
+  const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  
+  return {
+    orderId: order.id,
+    orderCode: order.code,
+    supplierId: order.supplierId,
+    supplierName: order.supplierName,
+    hsCode: '85423100',
+    productName: order.items.map(item => item.productName).join(', '),
+    productSpec: order.items.map(item => `${item.productName}: ${item.productSpec}`).join('; '),
+    quantity: totalQuantity,
+    unitPrice: order.totalAmount / totalQuantity,
+    currency: order.currency,
+    customsType: 'import',
+    customsMethod: 'general_trade',
+    originCountry: '中国',
+    destinationCountry: '中国',
+    portOfLoading: '上海港',
+    portOfDischarge: '上海港',
+    invoiceNo: `INV-${order.code}`,
+    invoiceDate: new Date().toISOString().split('T')[0],
+    packingListNo: `PL-${order.code}`,
+    remark: `系统自动生成，包含${order.items.length}种商品，总金额${order.totalAmount}${order.currency}`
+  };
+};
+
+const generateLogisticsPlan = (order: Order): LogisticsCreateData => {
+  return {
+    orderId: order.id,
+    orderCode: order.code,
+    supplierId: order.supplierId,
+    supplierName: order.supplierName,
+    transportMethod: 'land',
+    carrierName: '默认物流商',
+    originAddress: order.supplierName,
+    originCity: '上海',
+    originCountry: '中国',
+    destinationAddress: order.deliveryAddress,
+    destinationCity: '上海',
+    destinationCountry: '中国',
+    expectedDepartureDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    expectedArrivalDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    packages: [{
+      weight: 100,
+      volume: 1,
+      items: order.items.map(item => `${item.productName} x${item.quantity}`).join(', '),
+      packageNo: '',
+      type: '标准',
+      weightUnit: 'kg',
+      volumeUnit: 'm³',
+      quantity: 1,
+      isReceived: false,
+      receivedAt: '',
+      receivedBy: '',
+      qrCode: ''
+    }],
+    contactPerson: order.buyerName,
+    contactPhone: '13800000000',
+    remark: `系统自动生成，包含${order.items.length}种商品`
+  };
+};
+
+const applyPermissionFilter = async (list: Order[], currentUserRole?: string, currentUserRegions?: string[]): Promise<Order[]> => {
   try {
-    const user = await userService.getCurrentUser();
+    const user = currentUserRole ? { role: currentUserRole as User['role'], regions: currentUserRegions } : await userService.getCurrentUser();
     if (!user) return list;
 
     switch (user.role) {
       case 'ceo':
       case 'admin':
-      case 'finance':
-      case 'quality':
-      case 'director':
         return list;
 
+      case 'finance':
+      case 'quality':
+        return list;
+
+      case 'director':
+        if (!user.regions || user.regions.length === 0 || user.regions.includes('*')) return list;
+        return list.filter(order =>
+          user.regions!.includes(order.region)
+        );
+
       case 'supplier':
-        if (!user.supplierId) return [];
-        return list.filter(order => order.supplierId === user.supplierId);
+        const currentUser = await userService.getCurrentUser();
+        if (!currentUser?.supplierId) return [];
+        return list.filter(order => order.supplierId === currentUser.supplierId);
 
       case 'buyer':
-        if (!user.categories || user.categories.length === 0) return [];
+        const buyerUser = await userService.getCurrentUser();
+        if (!buyerUser?.categories || buyerUser.categories.length === 0) return [];
         return list.filter(order =>
-          user.categories!.includes(order.category)
+          buyerUser.categories!.includes(order.category)
         );
 
       case 'manager':
-        if (!user.department) return list;
+        const managerUser = await userService.getCurrentUser();
+        if (!managerUser?.department) return list;
         return list.filter(order =>
-          order.department === user.department
+          order.department === managerUser.department
         );
 
       default:
@@ -80,7 +154,7 @@ export interface ApprovalSubmitData {
 }
 
 export const orderService = {
-  async getOrderList(params?: OrderQueryParams): Promise<{
+  async getOrderList(params?: OrderQueryParams, currentUserRole?: string, currentUserRegions?: string[]): Promise<{
     list: Order[];
     total: number;
     page: number;
@@ -126,7 +200,7 @@ export const orderService = {
       result = result.filter(o => o.totalAmount <= params.maxAmount!);
     }
     
-    result = await applyPermissionFilter(result);
+    result = await applyPermissionFilter(result, currentUserRole, currentUserRegions);
     
     const total = result.length;
     const page = params?.page || 1;
@@ -167,6 +241,7 @@ export const orderService = {
       inquiryCode: '',
       category: data.category,
       subCategory: '',
+      region: '华东区',
       supplierId: data.supplierId,
       supplierName: data.supplierName,
       buyerId: data.buyerId,
@@ -196,6 +271,7 @@ export const orderService = {
       hasQualityIssue: false,
       hasCustomsIssue: false,
       hasLogisticsIssue: false,
+      completedAt: '',
     };
     
     ordersData.push(newOrder);
@@ -345,6 +421,11 @@ export const orderService = {
       order.progress = steps[steps.length - 1];
       order.currentApprovalNode = '';
       order.nextApprovalNode = '';
+      
+      if (order.items.length > 0) {
+        const customsData = generateCustomsDeclaration(order);
+        await customsService.createCustoms(customsData);
+      }
     }
     
     order.updatedAt = new Date().toISOString();
@@ -409,70 +490,22 @@ export const orderService = {
       order.actualDeliveryDate = new Date().toISOString().split('T')[0];
     }
     
+    if (newStatus === 'completed') {
+      order.completedAt = new Date().toISOString();
+    }
+    
     order.updatedAt = new Date().toISOString();
     
     if (oldStatus === 'pending_approval' && newStatus === 'approved') {
       if (order.items.length > 0) {
-        const firstItem = order.items[0];
-        await customsService.createCustoms({
-          orderId: order.id,
-          orderCode: order.code,
-          supplierId: order.supplierId,
-          supplierName: order.supplierName,
-          hsCode: '85423100',
-          productName: firstItem.productName,
-          productSpec: firstItem.productSpec,
-          quantity: firstItem.quantity,
-          unitPrice: firstItem.unitPrice,
-          currency: order.currency,
-          customsType: 'import',
-          customsMethod: 'general_trade',
-          originCountry: '中国',
-          destinationCountry: '中国',
-          portOfLoading: '上海港',
-          portOfDischarge: '上海港',
-          invoiceNo: `INV-${order.code}`,
-          invoiceDate: new Date().toISOString().split('T')[0],
-          packingListNo: `PL-${order.code}`,
-          remark: '系统自动生成'
-        });
+        const customsData = generateCustomsDeclaration(order);
+        await customsService.createCustoms(customsData);
       }
     }
     
     if (oldStatus === 'approved' && newStatus === 'production') {
-      await logisticsService.createLogistics({
-        orderId: order.id,
-        orderCode: order.code,
-        supplierId: order.supplierId,
-        supplierName: order.supplierName,
-        transportMethod: 'land',
-        carrierName: '默认物流商',
-        originAddress: order.supplierName,
-        originCity: '上海',
-        originCountry: '中国',
-        destinationAddress: order.deliveryAddress,
-        destinationCity: '上海',
-        destinationCountry: '中国',
-        expectedDepartureDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        expectedArrivalDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        packages: [{
-          weight: 100,
-          volume: 1,
-          items: order.title,
-          packageNo: '',
-          type: '标准',
-          weightUnit: 'kg',
-          volumeUnit: 'm³',
-          quantity: 1,
-          isReceived: false,
-          receivedAt: '',
-          receivedBy: '',
-          qrCode: ''
-        }],
-        contactPerson: order.buyerName,
-        contactPhone: '13800000000',
-        remark: '系统自动生成'
-      });
+      const logisticsData = generateLogisticsPlan(order);
+      await logisticsService.createLogistics(logisticsData);
     }
     
     return order;
