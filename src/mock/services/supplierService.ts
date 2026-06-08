@@ -1,6 +1,34 @@
 import { suppliers as suppliersData, Supplier } from '../data/suppliers';
+import { userService } from './userService';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const applyPermissionFilter = async (list: Supplier[]): Promise<Supplier[]> => {
+  try {
+    const user = await userService.getCurrentUser();
+    if (!user) return list;
+
+    switch (user.role) {
+      case 'ceo':
+      case 'admin':
+      case 'finance':
+      case 'quality':
+      case 'director':
+      case 'manager':
+      case 'buyer':
+        return list;
+
+      case 'supplier':
+        if (!user.supplierId) return [];
+        return list.filter(supplier => supplier.id === user.supplierId);
+
+      default:
+        return list;
+    }
+  } catch {
+    return list;
+  }
+};
 
 export interface SupplierQueryParams {
   keyword?: string;
@@ -49,6 +77,8 @@ export const supplierService = {
     if (params?.qualificationStatus) {
       result = result.filter(s => s.qualificationStatus === params.qualificationStatus);
     }
+    
+    result = await applyPermissionFilter(result);
     
     const total = result.length;
     const page = params?.page || 1;
@@ -189,5 +219,49 @@ export const supplierService = {
     await delay(200);
     const countries = [...new Set(suppliersData.map(s => s.country))];
     return countries;
+  },
+
+  async freezeSupplier(supplierId: string): Promise<{ success: boolean; message: string; supplier: Supplier | null }> {
+    await delay(400);
+
+    const index = suppliersData.findIndex(s => s.id === supplierId);
+    if (index === -1) {
+      return { success: false, message: '供应商不存在', supplier: null };
+    }
+
+    const supplier = suppliersData[index];
+    if (supplier.isFrozen) {
+      return { success: false, message: '供应商已处于冻结状态', supplier };
+    }
+
+    supplier.isFrozen = true;
+    supplier.frozenReason = '结算单超期未付款';
+    supplier.frozenAt = new Date().toISOString();
+    supplier.qualificationStatus = 'suspended';
+    supplier.updatedAt = new Date().toISOString();
+
+    return { success: true, message: '供应商已冻结', supplier };
+  },
+
+  async unfreezeSupplier(supplierId: string): Promise<{ success: boolean; message: string; supplier: Supplier | null }> {
+    await delay(400);
+
+    const index = suppliersData.findIndex(s => s.id === supplierId);
+    if (index === -1) {
+      return { success: false, message: '供应商不存在', supplier: null };
+    }
+
+    const supplier = suppliersData[index];
+    if (!supplier.isFrozen) {
+      return { success: false, message: '供应商未处于冻结状态', supplier };
+    }
+
+    supplier.isFrozen = false;
+    supplier.frozenReason = '';
+    supplier.frozenAt = '';
+    supplier.qualificationStatus = 'approved';
+    supplier.updatedAt = new Date().toISOString();
+
+    return { success: true, message: '供应商已解冻', supplier };
   }
 };

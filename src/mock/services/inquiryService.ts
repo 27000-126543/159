@@ -1,6 +1,46 @@
 import { inquiries as inquiriesData, Inquiry, Quote, NegotiationRecord } from '../data/inquiries';
+import { userService } from './userService';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const applyPermissionFilter = async (list: Inquiry[]): Promise<Inquiry[]> => {
+  try {
+    const user = await userService.getCurrentUser();
+    if (!user) return list;
+
+    switch (user.role) {
+      case 'ceo':
+      case 'admin':
+      case 'finance':
+      case 'quality':
+      case 'director':
+        return list;
+
+      case 'supplier':
+        if (!user.supplierId) return [];
+        return list.filter(inquiry =>
+          inquiry.quotes?.some(quote => quote.supplierId === user.supplierId)
+        );
+
+      case 'buyer':
+        if (!user.categories || user.categories.length === 0) return [];
+        return list.filter(inquiry =>
+          user.categories!.includes(inquiry.category)
+        );
+
+      case 'manager':
+        if (!user.department) return list;
+        return list.filter(inquiry =>
+          inquiry.department === user.department
+        );
+
+      default:
+        return list;
+    }
+  } catch {
+    return list;
+  }
+};
 
 export interface InquiryQueryParams {
   keyword?: string;
@@ -89,6 +129,8 @@ export const inquiryService = {
     if (params?.endDate) {
       result = result.filter(i => i.createdAt <= params.endDate!);
     }
+    
+    result = await applyPermissionFilter(result);
     
     const total = result.length;
     const page = params?.page || 1;

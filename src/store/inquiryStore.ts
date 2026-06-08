@@ -25,7 +25,7 @@ export interface InquiryState {
 export interface InquiryActions {
   fetchInquiries: (params?: InquiryQueryParams) => Promise<void>;
   fetchInquiryById: (id: string) => Promise<Inquiry | null>;
-  createInquiry: (data: Omit<Inquiry, 'id' | 'code' | 'status' | 'quotes' | 'negotiationRecords' | 'createdAt' | 'updatedAt'>) => Promise<Inquiry | null>;
+  createInquiry: (data: Omit<Inquiry, 'id' | 'code' | 'status' | 'quotes' | 'negotiations' | 'createdAt' | 'updatedAt'>) => Promise<Inquiry | null>;
   updateInquiry: (id: string, data: Partial<Inquiry>) => Promise<Inquiry | null>;
   deleteInquiry: (id: string) => Promise<{ success: boolean; message: string }>;
   publishInquiry: (id: string) => Promise<Inquiry | null>;
@@ -83,7 +83,7 @@ export const useInquiryStore = create<InquiryState & InquiryActions>((set, get) 
         set({
           currentInquiry: inquiry,
           quotes: inquiry.quotes || [],
-          negotiations: inquiry.negotiationRecords || [],
+          negotiations: inquiry.negotiations || [],
           loading: false,
         });
       } else {
@@ -213,10 +213,22 @@ export const useInquiryStore = create<InquiryState & InquiryActions>((set, get) 
     try {
       const result = await inquiryService.submitNegotiation(data);
       if (result) {
-        set((state) => ({
-          negotiations: [...state.negotiations, result],
-          loading: false,
-        }));
+        const updatedInquiry = await inquiryService.getInquiryById(data.inquiryId);
+        if (updatedInquiry) {
+          set((state) => ({
+            negotiations: updatedInquiry.negotiations || [],
+            currentInquiry: updatedInquiry,
+            inquiries: state.inquiries.map((i) =>
+              i.id === data.inquiryId ? updatedInquiry : i
+            ),
+            loading: false,
+          }));
+        } else {
+          set((state) => ({
+            negotiations: [...state.negotiations, result],
+            loading: false,
+          }));
+        }
       }
       return result;
     } catch (err) {
@@ -231,11 +243,18 @@ export const useInquiryStore = create<InquiryState & InquiryActions>((set, get) 
     try {
       const result = await inquiryService.selectSupplier(inquiryId, quoteId);
       if (result) {
+        const updatedQuotes: Quote[] = result.quotes.map((q) => ({
+          ...q,
+          status: (q.id === quoteId ? 'accepted' : 'rejected') as Quote['status'],
+        }));
+        const updatedPriceComparison = await inquiryService.getPriceComparison(inquiryId);
         set((state) => ({
           currentInquiry: result,
           inquiries: state.inquiries.map((i) =>
             i.id === inquiryId ? result : i
           ),
+          quotes: updatedQuotes,
+          priceComparison: updatedPriceComparison,
           loading: false,
         }));
         return { success: true, message: '选择供应商成功' };

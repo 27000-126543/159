@@ -1,4 +1,4 @@
-export type UserRole = 'supplier' | 'buyer' | 'manager' | 'director' | 'ceo' | 'finance';
+export type UserRole = 'supplier' | 'buyer' | 'manager' | 'director' | 'ceo' | 'finance' | 'quality' | 'admin';
 
 export interface UserInfo {
   id: string;
@@ -8,6 +8,9 @@ export interface UserInfo {
   department?: string;
   region?: string;
   avatar?: string;
+  supplierId?: string;
+  categories?: string[];
+  regions?: string[];
 }
 
 export interface LoginRequest {
@@ -447,7 +450,7 @@ export interface AlertMessage {
   title: string;
   content: string;
   relatedId: string;
-  relatedType: string;
+  relatedType: 'order' | 'settlement' | 'settlement_overdue' | 'logistics' | 'supplier' | 'system';
   timestamp: string;
   isRead: boolean;
 }

@@ -71,6 +71,7 @@ export interface SettlementActions {
   createSettlementFromStatement: (statementId: string) => Promise<Settlement | null>;
   submitPayment: (data: PaymentSubmitData) => Promise<{ success: boolean; message: string }>;
   registerPayment: (settlementId: string, data: { amount: number; paymentDate: string; paymentMethod: string; referenceNo: string }) => Promise<{ success: boolean; message: string }>;
+  markAsPaid: (id: string, paidAmount: number, paidAt: string) => Promise<{ success: boolean; message: string }>;
   fetchPayments: (params?: any) => Promise<void>;
   fetchCreditList: (params?: any) => Promise<void>;
   adjustCreditLimit: (supplierId: string, newLimit: number) => Promise<{ success: boolean; message: string }>;
@@ -322,6 +323,7 @@ export const useSettlementStore = create<SettlementState & SettlementActions>((s
       supplierName: statement.supplierName,
       settlementType: 'normal',
       status: 'draft',
+      paymentStatus: 'unpaid',
       currency: 'CNY',
       items: [],
       totalAmount: statement.totalAmount,
@@ -332,6 +334,7 @@ export const useSettlementStore = create<SettlementState & SettlementActions>((s
       creditPeriod: 30,
       creditStartDate: new Date().toISOString().split('T')[0],
       creditDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       invoices: [],
       paymentPlans: [],
       hasDeduction: false,
@@ -375,35 +378,58 @@ export const useSettlementStore = create<SettlementState & SettlementActions>((s
 
   registerPayment: async (settlementId, data) => {
     set({ loading: true, error: null });
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const newPayment: Payment = {
-      id: `PAY${Date.now()}`,
-      settlementId,
-      amount: data.amount,
-      paymentDate: data.paymentDate,
-      paymentMethod: data.paymentMethod,
-      referenceNo: data.referenceNo,
-      createdAt: new Date().toISOString(),
-    };
-    set(state => ({
-      payments: [newPayment, ...state.payments],
-      settlements: state.settlements.map(s => {
-        if (s.id === settlementId) {
-          const paidAmount = s.paidAmount + data.amount;
-          const unpaidAmount = s.grandTotal - paidAmount;
-          return {
-            ...s,
-            paidAmount,
-            unpaidAmount,
-            status: unpaidAmount <= 0 ? 'completed' : s.status,
-            updatedAt: new Date().toISOString(),
-          };
-        }
-        return s;
-      }),
-      loading: false,
-    }));
-    return { success: true, message: '付款登记成功' };
+    try {
+      const result = await settlementService.markAsPaid(settlementId, data.amount, data.paymentDate);
+      if (result.success && result.settlement) {
+        const newPayment: Payment = {
+          id: `PAY${Date.now()}`,
+          settlementId,
+          amount: data.amount,
+          paymentDate: data.paymentDate,
+          paymentMethod: data.paymentMethod,
+          referenceNo: data.referenceNo,
+          createdAt: new Date().toISOString(),
+        };
+        set(state => ({
+          payments: [newPayment, ...state.payments],
+          settlements: state.settlements.map(s =>
+            s.id === settlementId ? result.settlement! : s
+          ),
+          currentSettlement: state.currentSettlement?.id === settlementId ? result.settlement : state.currentSettlement,
+          loading: false,
+        }));
+        return { success: true, message: result.message };
+      }
+      set({ error: result.message, loading: false });
+      return { success: false, message: result.message };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '付款登记失败';
+      set({ error: errorMessage, loading: false });
+      return { success: false, message: errorMessage };
+    }
+  },
+
+  markAsPaid: async (id, paidAmount, paidAt) => {
+    set({ loading: true, error: null });
+    try {
+      const result = await settlementService.markAsPaid(id, paidAmount, paidAt);
+      if (result.success && result.settlement) {
+        set(state => ({
+          settlements: state.settlements.map(s =>
+            s.id === id ? result.settlement! : s
+          ),
+          currentSettlement: state.currentSettlement?.id === id ? result.settlement : state.currentSettlement,
+          loading: false,
+        }));
+        return { success: true, message: result.message };
+      }
+      set({ error: result.message, loading: false });
+      return { success: false, message: result.message };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '付款登记失败';
+      set({ error: errorMessage, loading: false });
+      return { success: false, message: errorMessage };
+    }
   },
 
   fetchPayments: async (params) => {

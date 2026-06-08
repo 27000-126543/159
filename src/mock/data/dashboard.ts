@@ -103,7 +103,7 @@ export interface DashboardData {
     title: string;
     content: string;
     relatedId: string;
-    relatedType: string;
+    relatedType: 'order' | 'settlement' | 'settlement_overdue' | 'logistics' | 'supplier' | 'system';
     timestamp: string;
     isRead: boolean;
   }>;

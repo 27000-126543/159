@@ -48,6 +48,7 @@ export interface Settlement {
   supplierName: string;
   settlementType: 'normal' | 'return' | 'discount' | 'advance';
   status: 'draft' | 'verifying' | 'verified' | 'accounting' | 'completed' | 'rejected';
+  paymentStatus: 'unpaid' | 'paid' | 'overdue';
   currency: 'CNY' | 'USD' | 'EUR' | 'JPY' | 'CHF';
   exchangeRate?: number;
   items: SettlementItem[];
@@ -59,6 +60,7 @@ export interface Settlement {
   creditPeriod: number;
   creditStartDate: string;
   creditDueDate: string;
+  dueDate: string;
   actualPaymentDate?: string;
   invoices: Invoice[];
   paymentPlans: PaymentPlan[];
@@ -86,6 +88,7 @@ export const settlement: Settlement[] = [
     supplierName: '深圳华为技术有限公司',
     settlementType: 'normal',
     status: 'completed',
+    paymentStatus: 'paid',
     currency: 'CNY',
     items: [
       {
@@ -111,6 +114,7 @@ export const settlement: Settlement[] = [
     creditPeriod: 30,
     creditStartDate: '2024-01-20',
     creditDueDate: '2024-02-19',
+    dueDate: '2024-02-19',
     actualPaymentDate: '2024-02-15',
     invoices: [
       {
@@ -175,6 +179,7 @@ export const settlement: Settlement[] = [
     supplierName: '德国西门子股份公司',
     settlementType: 'return',
     status: 'completed',
+    paymentStatus: 'paid',
     currency: 'EUR',
     exchangeRate: 7.85,
     items: [
@@ -201,6 +206,7 @@ export const settlement: Settlement[] = [
     creditPeriod: 60,
     creditStartDate: '2024-02-15',
     creditDueDate: '2024-04-15',
+    dueDate: '2024-04-15',
     actualPaymentDate: '2024-04-10',
     invoices: [
       {
@@ -254,6 +260,7 @@ export const settlement: Settlement[] = [
     supplierName: '日本三菱电机株式会社',
     settlementType: 'normal',
     status: 'completed',
+    paymentStatus: 'paid',
     currency: 'JPY',
     exchangeRate: 0.048,
     items: [
@@ -280,6 +287,7 @@ export const settlement: Settlement[] = [
     creditPeriod: 45,
     creditStartDate: '2024-03-10',
     creditDueDate: '2024-04-24',
+    dueDate: '2024-04-24',
     actualPaymentDate: '2024-04-20',
     invoices: [
       {
@@ -344,6 +352,7 @@ export const settlement: Settlement[] = [
     supplierName: '鞍钢股份有限公司',
     settlementType: 'discount',
     status: 'completed',
+    paymentStatus: 'paid',
     currency: 'CNY',
     items: [
       {
@@ -369,6 +378,7 @@ export const settlement: Settlement[] = [
     creditPeriod: 30,
     creditStartDate: '2024-04-05',
     creditDueDate: '2024-05-05',
+    dueDate: '2024-05-05',
     actualPaymentDate: '2024-05-02',
     invoices: [
       {
@@ -422,6 +432,7 @@ export const settlement: Settlement[] = [
     supplierName: '瑞士ABB集团',
     settlementType: 'normal',
     status: 'verifying',
+    paymentStatus: 'unpaid',
     currency: 'CHF',
     exchangeRate: 8.2,
     items: [
@@ -448,6 +459,7 @@ export const settlement: Settlement[] = [
     creditPeriod: 90,
     creditStartDate: '2024-05-15',
     creditDueDate: '2024-08-13',
+    dueDate: '2024-08-13',
     invoices: [
       {
         id: 'INV005',
@@ -513,6 +525,7 @@ export const settlement: Settlement[] = [
     supplierName: '深圳华为技术有限公司',
     settlementType: 'normal',
     status: 'completed',
+    paymentStatus: 'paid',
     currency: 'CNY',
     items: [
       {
@@ -538,6 +551,7 @@ export const settlement: Settlement[] = [
     creditPeriod: 15,
     creditStartDate: '2024-05-20',
     creditDueDate: '2024-06-04',
+    dueDate: '2024-06-04',
     actualPaymentDate: '2024-06-03',
     invoices: [
       {
@@ -590,6 +604,7 @@ export const settlement: Settlement[] = [
     supplierName: '韩国三星电子',
     settlementType: 'normal',
     status: 'accounting',
+    paymentStatus: 'unpaid',
     currency: 'USD',
     exchangeRate: 7.25,
     items: [
@@ -616,6 +631,7 @@ export const settlement: Settlement[] = [
     creditPeriod: 60,
     creditStartDate: '2024-06-10',
     creditDueDate: '2024-08-09',
+    dueDate: '2024-08-09',
     invoices: [
       {
         id: 'INV007',
@@ -675,6 +691,7 @@ export const settlement: Settlement[] = [
     supplierName: '沈阳机床股份有限公司',
     settlementType: 'return',
     status: 'verifying',
+    paymentStatus: 'unpaid',
     currency: 'CNY',
     items: [
       {
@@ -700,6 +717,7 @@ export const settlement: Settlement[] = [
     creditPeriod: 90,
     creditStartDate: '2024-06-15',
     creditDueDate: '2024-09-13',
+    dueDate: '2024-09-13',
     invoices: [
       {
         id: 'INV008',
@@ -757,6 +775,7 @@ export const settlement: Settlement[] = [
     supplierName: '武汉凡谷电子技术股份有限公司',
     settlementType: 'normal',
     status: 'accounting',
+    paymentStatus: 'unpaid',
     currency: 'CNY',
     items: [
       {
@@ -782,6 +801,7 @@ export const settlement: Settlement[] = [
     creditPeriod: 30,
     creditStartDate: '2024-07-05',
     creditDueDate: '2024-08-04',
+    dueDate: '2024-08-04',
     invoices: [
       {
         id: 'INV009',
@@ -826,6 +846,7 @@ export const settlement: Settlement[] = [
     supplierName: '华为数字能源技术有限公司',
     settlementType: 'normal',
     status: 'draft',
+    paymentStatus: 'unpaid',
     currency: 'CNY',
     items: [
       {
@@ -851,6 +872,7 @@ export const settlement: Settlement[] = [
     creditPeriod: 90,
     creditStartDate: '2024-07-20',
     creditDueDate: '2024-10-18',
+    dueDate: '2024-10-18',
     invoices: [
       {
         id: 'INV010',

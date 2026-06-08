@@ -1,4 +1,4 @@
-export type UserRole = 'supplier' | 'buyer' | 'manager' | 'director' | 'ceo' | 'finance';
+export type UserRole = 'supplier' | 'buyer' | 'manager' | 'director' | 'ceo' | 'finance' | 'quality' | 'admin';
 
 export interface PermissionConfig {
   role: UserRole;
@@ -11,9 +11,11 @@ export const ROLE_LEVELS: Record<UserRole, number> = {
   supplier: 1,
   buyer: 2,
   finance: 2,
+  quality: 2,
   manager: 3,
   director: 4,
   ceo: 5,
+  admin: 6,
 };
 
 export const ROLE_NAMES: Record<UserRole, string> = {
@@ -23,23 +25,25 @@ export const ROLE_NAMES: Record<UserRole, string> = {
   director: '采购总监',
   ceo: 'CEO',
   finance: '财务专员',
+  quality: '质量专员',
+  admin: '系统管理员',
 };
 
 export const ROUTE_PERMISSIONS: Record<string, UserRole[]> = {
-  '/dashboard': ['buyer', 'manager', 'director', 'ceo'],
-  '/suppliers': ['buyer', 'manager', 'director', 'ceo'],
-  '/suppliers/register': ['supplier'],
-  '/suppliers/:id': ['buyer', 'manager', 'director', 'ceo'],
-  '/inquiries': ['supplier', 'buyer', 'manager', 'director', 'ceo', 'finance'],
-  '/inquiries/:id': ['supplier', 'buyer', 'manager', 'director', 'ceo', 'finance'],
-  '/orders': ['supplier', 'buyer', 'manager', 'director', 'ceo', 'finance'],
-  '/orders/:id': ['supplier', 'buyer', 'manager', 'director', 'ceo', 'finance'],
-  '/approval': ['manager', 'director', 'ceo', 'finance'],
-  '/customs': ['buyer', 'manager', 'director', 'ceo'],
-  '/logistics': ['supplier', 'buyer', 'manager', 'director', 'ceo', 'finance'],
-  '/quality': ['supplier', 'buyer', 'manager', 'director', 'ceo', 'finance'],
-  '/settlement': ['finance', 'manager', 'director', 'ceo', 'supplier'],
-  '/settings': ['ceo'],
+  '/dashboard': ['buyer', 'manager', 'director', 'ceo', 'admin'],
+  '/suppliers': ['buyer', 'manager', 'director', 'ceo', 'admin'],
+  '/suppliers/register': ['supplier', 'admin'],
+  '/suppliers/:id': ['buyer', 'manager', 'director', 'ceo', 'admin'],
+  '/inquiries': ['supplier', 'buyer', 'manager', 'director', 'ceo', 'finance', 'admin'],
+  '/inquiries/:id': ['supplier', 'buyer', 'manager', 'director', 'ceo', 'finance', 'admin'],
+  '/orders': ['supplier', 'buyer', 'manager', 'director', 'ceo', 'finance', 'admin'],
+  '/orders/:id': ['supplier', 'buyer', 'manager', 'director', 'ceo', 'finance', 'admin'],
+  '/approval': ['manager', 'director', 'ceo', 'finance', 'admin'],
+  '/customs': ['buyer', 'manager', 'director', 'ceo', 'admin'],
+  '/logistics': ['supplier', 'buyer', 'manager', 'director', 'ceo', 'finance', 'admin'],
+  '/quality': ['supplier', 'buyer', 'manager', 'director', 'ceo', 'finance', 'admin'],
+  '/settlement': ['finance', 'manager', 'director', 'ceo', 'supplier', 'admin'],
+  '/settings': ['ceo', 'admin'],
 };
 
 export function hasPermission(

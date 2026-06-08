@@ -16,6 +16,10 @@ export interface ApprovalItem {
   currency: string;
   status: 'pending' | 'approved' | 'rejected';
   currentNode: string;
+  nextNode: string;
+  totalNodes: number;
+  currentNodeIndex: number;
+  isLargeAmount: boolean;
   priority: 'low' | 'medium' | 'high';
   appliedAt: string;
   details?: Partial<Order>;
@@ -56,6 +60,11 @@ const mapOrderToApprovalItem = (order: Order, status: 'pending' | 'approved' | '
   const priority: 'low' | 'medium' | 'high' =
     amount > 500000 ? 'high' : amount > 100000 ? 'medium' : 'low';
 
+  const totalNodes = order.approvalRecords.length;
+  const currentNodeIndex = order.approvalRecords.findIndex(
+    r => r.nodeName === order.currentApprovalNode
+  );
+
   return {
     id: `approval-${order.id}`,
     businessId: order.id,
@@ -69,6 +78,10 @@ const mapOrderToApprovalItem = (order: Order, status: 'pending' | 'approved' | '
     currency: order.currency,
     status,
     currentNode: String(order.currentApprovalNode || ''),
+    nextNode: String(order.nextApprovalNode || ''),
+    totalNodes,
+    currentNodeIndex: currentNodeIndex >= 0 ? currentNodeIndex : 0,
+    isLargeAmount: order.isLargeAmount,
     priority,
     appliedAt: order.createdAt,
     details: order,

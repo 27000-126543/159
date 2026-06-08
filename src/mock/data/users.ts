@@ -6,13 +6,16 @@ export interface User {
   email: string;
   phone: string;
   avatar: string;
-  role: 'admin' | 'buyer' | 'manager' | 'finance' | 'quality';
+  role: 'admin' | 'buyer' | 'manager' | 'director' | 'ceo' | 'finance' | 'quality' | 'supplier';
   roleName: string;
   department: string;
   permissions: string[];
   status: 'active' | 'inactive';
   createdAt: string;
   lastLoginAt: string;
+  supplierId?: string;
+  categories?: string[];
+  regions?: string[];
 }
 
 export const users: User[] = [
@@ -47,6 +50,7 @@ export const users: User[] = [
     status: 'active',
     createdAt: '2023-02-15T00:00:00Z',
     lastLoginAt: '2024-01-15T08:45:00Z',
+    categories: ['电子元器件', '机械设备', '原材料'],
   },
   {
     id: 'U003',
@@ -95,6 +99,56 @@ export const users: User[] = [
     status: 'active',
     createdAt: '2023-04-05T00:00:00Z',
     lastLoginAt: '2024-01-15T11:20:00Z',
+  },
+  {
+    id: 'U006',
+    username: 'supplier1',
+    password: 'supplier123',
+    name: '张伟',
+    email: 'zhangwei@huawei.com',
+    phone: '13800138101',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=supplier1',
+    role: 'supplier',
+    roleName: '供应商',
+    department: '供应商',
+    permissions: ['inquiry:view', 'quote:submit', 'order:view'],
+    status: 'active',
+    createdAt: '2023-05-10T00:00:00Z',
+    lastLoginAt: '2024-01-14T09:00:00Z',
+    supplierId: 'S001',
+  },
+  {
+    id: 'U007',
+    username: 'director1',
+    password: 'director123',
+    name: '刘强',
+    email: 'liuqiang@company.com',
+    phone: '13800138006',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=director1',
+    role: 'director',
+    roleName: '采购总监',
+    department: '采购部',
+    permissions: ['dashboard:view', 'report:export', 'inquiry:view', 'order:view', 'supplier:view'],
+    status: 'active',
+    createdAt: '2023-01-10T00:00:00Z',
+    lastLoginAt: '2024-01-15T08:30:00Z',
+    regions: ['华东区', '华南区', '华北区'],
+  },
+  {
+    id: 'U008',
+    username: 'ceo1',
+    password: 'ceo123',
+    name: '陈明',
+    email: 'chenming@company.com',
+    phone: '13800138007',
+    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=ceo1',
+    role: 'ceo',
+    roleName: 'CEO',
+    department: '总裁办',
+    permissions: ['dashboard:view', 'report:export', 'all'],
+    status: 'active',
+    createdAt: '2022-06-01T00:00:00Z',
+    lastLoginAt: '2024-01-15T07:30:00Z',
   },
 ];
 

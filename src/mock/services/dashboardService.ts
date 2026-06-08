@@ -1,4 +1,5 @@
 import { dashboardData, DashboardData } from '../data/dashboard';
+import { settlementService } from './settlementService';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -20,6 +21,8 @@ export interface ExportParams {
 export const dashboardService = {
   async getDashboardData(params?: DashboardFilterParams): Promise<DashboardData> {
     await delay(800);
+
+    await settlementService.checkOverdueSettlements();
     
     let data = JSON.parse(JSON.stringify(dashboardData)) as DashboardData;
     
@@ -107,6 +110,9 @@ export const dashboardService = {
   
   async getAlertMessages(unreadOnly?: boolean): Promise<DashboardData['alertMessages']> {
     await delay(300);
+
+    await settlementService.checkOverdueSettlements();
+
     let messages = [...dashboardData.alertMessages];
     if (unreadOnly) {
       messages = messages.filter(m => !m.isRead);

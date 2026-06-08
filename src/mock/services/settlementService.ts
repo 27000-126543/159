@@ -1,4 +1,6 @@
 import { settlementData, Settlement } from '../data/settlement';
+import { supplierService } from './supplierService';
+import { dashboardData } from '../data/dashboard';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -48,6 +50,43 @@ export interface PaymentSubmitData {
 }
 
 export const settlementService = {
+  async checkOverdueSettlements(): Promise<void> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (const settlement of settlementData) {
+      if (settlement.paymentStatus === 'unpaid') {
+        const dueDate = new Date(settlement.dueDate);
+        dueDate.setHours(0, 0, 0, 0);
+
+        if (dueDate < today) {
+          settlement.paymentStatus = 'overdue';
+
+          const freezeResult = await supplierService.freezeSupplier(settlement.supplierId);
+          if (freezeResult.success) {
+            const existingAlert = dashboardData.alertMessages.find(
+              a => a.relatedId === settlement.id && a.relatedType === 'settlement_overdue'
+            );
+
+            if (!existingAlert) {
+              const alertId = `alert_overdue_${settlement.id}`;
+              dashboardData.alertMessages.unshift({
+                id: alertId,
+                type: 'error',
+                title: '结算单超期未付款',
+                content: `结算单${settlement.code}（供应商：${settlement.supplierName}）已超期，应付金额 ${settlement.currency} ${settlement.unpaidAmount.toLocaleString()}，供应商已被冻结供货。`,
+                relatedId: settlement.id,
+                relatedType: 'settlement_overdue',
+                timestamp: new Date().toISOString(),
+                isRead: false
+              });
+            }
+          }
+        }
+      }
+    }
+  },
+
   async getSettlementList(params?: SettlementQueryParams): Promise<{
     list: Settlement[];
     total: number;
@@ -55,6 +94,8 @@ export const settlementService = {
     pageSize: number;
   }> {
     await delay(600);
+
+    await this.checkOverdueSettlements();
     
     let result = [...settlementData];
     
@@ -147,6 +188,7 @@ export const settlementService = {
       supplierName: data.supplierName,
       settlementType: data.settlementType,
       status: 'draft',
+      paymentStatus: 'unpaid',
       currency: data.currency,
       exchangeRate: data.exchangeRate,
       items: settlementItems,
@@ -158,6 +200,7 @@ export const settlementService = {
       creditPeriod: data.creditPeriod,
       creditStartDate: data.creditStartDate,
       creditDueDate: data.creditDueDate,
+      dueDate: data.creditDueDate,
       invoices: [],
       paymentPlans: [],
       hasDeduction: false,
@@ -282,8 +325,26 @@ export const settlementService = {
     settlement.unpaidAmount -= data.actualAmount;
     
     if (settlement.unpaidAmount <= 0) {
+      settlement.paymentStatus = 'paid';
       settlement.status = 'completed';
       settlement.actualPaymentDate = new Date().toISOString().split('T')[0];
+
+      const otherOverdueSettlements = settlementData.filter(
+        s => s.supplierId === settlement.supplierId && 
+             s.id !== settlement.id && 
+             s.paymentStatus === 'overdue'
+      );
+
+      if (otherOverdueSettlements.length === 0) {
+        await supplierService.unfreezeSupplier(settlement.supplierId);
+      }
+
+      const alertIndex = dashboardData.alertMessages.findIndex(
+        a => a.relatedId === settlement.id && a.relatedType === 'settlement_overdue'
+      );
+      if (alertIndex !== -1) {
+        dashboardData.alertMessages.splice(alertIndex, 1);
+      }
     }
     
     settlement.updatedAt = new Date().toISOString();
@@ -304,6 +365,45 @@ export const settlementService = {
     });
     
     return { success: true, message: `已更新${settlements.length}个结算单的信用期` };
+  },
+
+  async markAsPaid(id: string, paidAmount: number, paidAt: string): Promise<{ success: boolean; message: string; settlement: Settlement | null }> {
+    await delay(500);
+
+    const settlement = settlementData.find(s => s.id === id);
+    if (!settlement) {
+      return { success: false, message: '结算单不存在', settlement: null };
+    }
+
+    settlement.paidAmount += paidAmount;
+    settlement.unpaidAmount = Math.max(0, settlement.unpaidAmount - paidAmount);
+    settlement.actualPaymentDate = paidAt;
+
+    if (settlement.unpaidAmount <= 0) {
+      settlement.paymentStatus = 'paid';
+      settlement.status = 'completed';
+    }
+
+    settlement.updatedAt = new Date().toISOString();
+
+    const otherOverdueSettlements = settlementData.filter(
+      s => s.supplierId === settlement.supplierId && 
+           s.id !== settlement.id && 
+           s.paymentStatus === 'overdue'
+    );
+
+    if (otherOverdueSettlements.length === 0) {
+      await supplierService.unfreezeSupplier(settlement.supplierId);
+    }
+
+    const alertIndex = dashboardData.alertMessages.findIndex(
+      a => a.relatedId === settlement.id && a.relatedType === 'settlement_overdue'
+    );
+    if (alertIndex !== -1) {
+      dashboardData.alertMessages.splice(alertIndex, 1);
+    }
+
+    return { success: true, message: '付款登记成功', settlement };
   },
   
   async getSettlementStatistics(params?: {

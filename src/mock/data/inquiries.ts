@@ -26,7 +26,7 @@ export interface Quote {
   paymentTerms: string;
   warrantyPeriod: string;
   quoteDate: string;
-  status: 'submitted' | 'negotiating' | 'accepted' | 'rejected';
+  status: 'pending' | 'submitted' | 'negotiating' | 'accepted' | 'rejected';
   remarks: string;
 }
 
@@ -60,7 +60,6 @@ export interface Inquiry {
   statusName: string;
   quotes: Quote[];
   negotiations: NegotiationRecord[];
-  negotiationRecords?: NegotiationRecord[];
   selectedSupplierId: string;
   selectedSupplierName: string;
   selectedQuoteId?: string;

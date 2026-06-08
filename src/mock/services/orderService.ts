@@ -1,6 +1,46 @@
 import { ordersData, Order, OrderItem, ApprovalRecord } from '../data/orders';
+import { customsService } from './customsService';
+import { logisticsService } from './logisticsService';
+import { userService } from './userService';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const applyPermissionFilter = async (list: Order[]): Promise<Order[]> => {
+  try {
+    const user = await userService.getCurrentUser();
+    if (!user) return list;
+
+    switch (user.role) {
+      case 'ceo':
+      case 'admin':
+      case 'finance':
+      case 'quality':
+      case 'director':
+        return list;
+
+      case 'supplier':
+        if (!user.supplierId) return [];
+        return list.filter(order => order.supplierId === user.supplierId);
+
+      case 'buyer':
+        if (!user.categories || user.categories.length === 0) return [];
+        return list.filter(order =>
+          user.categories!.includes(order.category)
+        );
+
+      case 'manager':
+        if (!user.department) return list;
+        return list.filter(order =>
+          order.department === user.department
+        );
+
+      default:
+        return list;
+    }
+  } catch {
+    return list;
+  }
+};
 
 export interface OrderQueryParams {
   keyword?: string;
@@ -86,6 +126,8 @@ export const orderService = {
       result = result.filter(o => o.totalAmount <= params.maxAmount!);
     }
     
+    result = await applyPermissionFilter(result);
+    
     const total = result.length;
     const page = params?.page || 1;
     const pageSize = params?.pageSize || 10;
@@ -145,6 +187,8 @@ export const orderService = {
       progress: 0,
       approvalRecords: [],
       currentApprovalNode: '',
+      nextApprovalNode: '',
+      isLargeAmount: totalAmount > 100000,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       remarks: data.remark || '',
@@ -205,35 +249,42 @@ export const orderService = {
       return null;
     }
     
+    const amount = order.totalAmount;
+    order.isLargeAmount = amount > 100000;
+    
+    let approvalNodes: string[] = ['采购经理审批', '财务复核'];
+    if (amount > 100000) {
+      approvalNodes = ['采购经理审批', '财务复核', '总经理审批'];
+    }
+    if (amount > 500000) {
+      approvalNodes = ['采购经理审批', '财务复核', '总经理审批', 'CEO审批'];
+    }
+    
+    const progressSteps: Record<number, number> = {
+      2: 25,
+      3: 20,
+      4: 15
+    };
+    const initialProgress = progressSteps[approvalNodes.length] || 25;
+    
     order.status = 'pending_approval';
     order.statusName = '待审批';
-    order.progress = 20;
-    order.currentApprovalNode = '采购经理审批';
+    order.progress = initialProgress;
+    order.currentApprovalNode = approvalNodes[0];
+    order.nextApprovalNode = approvalNodes.length > 1 ? approvalNodes[1] : '';
     order.updatedAt = new Date().toISOString();
     
-    order.approvalRecords.push({
-      id: `AP${order.id}-1`,
-      nodeName: '采购经理审批',
+    order.approvalRecords = approvalNodes.map((nodeName, idx) => ({
+      id: `AP${order.id}-${idx + 1}`,
+      nodeName,
       approverId: '',
       approverName: '',
       approverRole: '',
-      status: 'pending',
+      status: 'pending' as const,
       opinion: '',
       approvedAt: '',
       signature: ''
-    });
-    
-    order.approvalRecords.push({
-      id: `AP${order.id}-2`,
-      nodeName: '财务复核',
-      approverId: '',
-      approverName: '',
-      approverRole: '',
-      status: 'pending',
-      opinion: '',
-      approvedAt: '',
-      signature: ''
-    });
+    }));
     
     return order;
   },
@@ -266,19 +317,34 @@ export const orderService = {
       order.statusName = '已驳回';
       order.progress = 10;
       order.currentApprovalNode = '';
+      order.nextApprovalNode = '';
       order.updatedAt = new Date().toISOString();
       return order;
     }
     
+    const totalNodes = order.approvalRecords.length;
+    const approvedCount = order.approvalRecords.filter(a => a.status === 'approved').length;
     const pendingApprovals = order.approvalRecords.filter(a => a.status === 'pending');
+    
+    const progressSteps: Record<number, number[]> = {
+      2: [0, 25, 50, 100],
+      3: [0, 20, 40, 60, 100],
+      4: [0, 15, 30, 45, 60, 100]
+    };
+    
+    const steps = progressSteps[totalNodes] || progressSteps[2];
+    const progressIndex = Math.min(approvedCount + 1, steps.length - 1);
+    
     if (pendingApprovals.length > 0) {
       order.currentApprovalNode = pendingApprovals[0].nodeName;
-      order.progress = 50;
+      order.nextApprovalNode = pendingApprovals.length > 1 ? pendingApprovals[1].nodeName : '';
+      order.progress = steps[progressIndex];
     } else {
       order.status = 'approved';
       order.statusName = '已批准';
-      order.progress = 30;
+      order.progress = steps[steps.length - 1];
       order.currentApprovalNode = '';
+      order.nextApprovalNode = '';
     }
     
     order.updatedAt = new Date().toISOString();
@@ -292,6 +358,8 @@ export const orderService = {
     if (!order) {
       return null;
     }
+    
+    const oldStatus = order.status;
     
     const validTransitions: Record<Order['status'], Order['status'][]> = {
       draft: ['pending_approval', 'cancelled'],
@@ -342,6 +410,71 @@ export const orderService = {
     }
     
     order.updatedAt = new Date().toISOString();
+    
+    if (oldStatus === 'pending_approval' && newStatus === 'approved') {
+      if (order.items.length > 0) {
+        const firstItem = order.items[0];
+        await customsService.createCustoms({
+          orderId: order.id,
+          orderCode: order.code,
+          supplierId: order.supplierId,
+          supplierName: order.supplierName,
+          hsCode: '85423100',
+          productName: firstItem.productName,
+          productSpec: firstItem.productSpec,
+          quantity: firstItem.quantity,
+          unitPrice: firstItem.unitPrice,
+          currency: order.currency,
+          customsType: 'import',
+          customsMethod: 'general_trade',
+          originCountry: '中国',
+          destinationCountry: '中国',
+          portOfLoading: '上海港',
+          portOfDischarge: '上海港',
+          invoiceNo: `INV-${order.code}`,
+          invoiceDate: new Date().toISOString().split('T')[0],
+          packingListNo: `PL-${order.code}`,
+          remark: '系统自动生成'
+        });
+      }
+    }
+    
+    if (oldStatus === 'approved' && newStatus === 'production') {
+      await logisticsService.createLogistics({
+        orderId: order.id,
+        orderCode: order.code,
+        supplierId: order.supplierId,
+        supplierName: order.supplierName,
+        transportMethod: 'land',
+        carrierName: '默认物流商',
+        originAddress: order.supplierName,
+        originCity: '上海',
+        originCountry: '中国',
+        destinationAddress: order.deliveryAddress,
+        destinationCity: '上海',
+        destinationCountry: '中国',
+        expectedDepartureDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        expectedArrivalDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        packages: [{
+          weight: 100,
+          volume: 1,
+          items: order.title,
+          packageNo: '',
+          type: '标准',
+          weightUnit: 'kg',
+          volumeUnit: 'm³',
+          quantity: 1,
+          isReceived: false,
+          receivedAt: '',
+          receivedBy: '',
+          qrCode: ''
+        }],
+        contactPerson: order.buyerName,
+        contactPhone: '13800000000',
+        remark: '系统自动生成'
+      });
+    }
+    
     return order;
   },
   

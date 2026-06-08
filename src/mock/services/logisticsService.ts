@@ -208,6 +208,10 @@ export const logisticsService = {
     logisticsData.push(newLogistics);
     return newLogistics;
   },
+
+  async createLogistics(data: LogisticsCreateData): Promise<Logistics> {
+    return this.createLogisticsPlan(data);
+  },
   
   async updateLogistics(id: string, data: Partial<Logistics>): Promise<Logistics | null> {
     await delay(600);

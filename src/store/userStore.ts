@@ -24,6 +24,9 @@ const mapToUserInfo = (user: any): UserInfo => ({
   role: user.role as UserRole,
   department: user.department,
   avatar: user.avatar,
+  supplierId: user.supplierId,
+  categories: user.categories,
+  regions: user.regions,
 });
 
 const initialState: UserState = {

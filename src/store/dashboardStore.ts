@@ -84,7 +84,21 @@ export const useDashboardStore = create<DashboardState & DashboardActions>((set,
     try {
       const mergedParams = { ...get().filterParams, ...params };
       const data = await dashboardService.getDashboardData(mergedParams);
-      set({ data, filterParams: mergedParams, loading: false });
+      set({
+        data,
+        alertMessages: data.alertMessages,
+        kpis: data.kpis,
+        trends: data.trends,
+        categoryAnalysis: data.categoryAnalysis,
+        regionAnalysis: data.regionAnalysis,
+        buyerPerformance: data.buyerPerformance,
+        orderStatus: data.orderStatus,
+        supplierRating: data.supplierRating,
+        recentOrders: data.recentOrders,
+        summary: data.summary,
+        filterParams: mergedParams,
+        loading: false
+      });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '获取大屏数据失败';
       set({ error: errorMessage, loading: false });

@@ -46,6 +46,8 @@ export interface SupplierActions {
   }) => Promise<Supplier | null>;
   fetchCategories: () => Promise<void>;
   fetchCountries: () => Promise<void>;
+  freezeSupplier: (supplierId: string) => Promise<{ success: boolean; message: string }>;
+  unfreezeSupplier: (supplierId: string) => Promise<{ success: boolean; message: string }>;
   setFilterParams: (params: Partial<SupplierQueryParams>) => void;
   setCurrentSupplier: (supplier: Supplier | null) => void;
   clearError: () => void;
@@ -235,6 +237,52 @@ export const useSupplierStore = create<SupplierState & SupplierActions>((set, ge
     }
   },
 
+  freezeSupplier: async (supplierId) => {
+    set({ loading: true, error: null });
+    try {
+      const result = await supplierService.freezeSupplier(supplierId);
+      if (result.success && result.supplier) {
+        set(state => ({
+          suppliers: state.suppliers.map(s =>
+            s.id === supplierId ? result.supplier! : s
+          ),
+          currentSupplier: state.currentSupplier?.id === supplierId ? result.supplier : state.currentSupplier,
+          loading: false,
+        }));
+        return { success: true, message: result.message };
+      }
+      set({ error: result.message, loading: false });
+      return { success: false, message: result.message };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '冻结供应商失败';
+      set({ error: errorMessage, loading: false });
+      return { success: false, message: errorMessage };
+    }
+  },
+
+  unfreezeSupplier: async (supplierId) => {
+    set({ loading: true, error: null });
+    try {
+      const result = await supplierService.unfreezeSupplier(supplierId);
+      if (result.success && result.supplier) {
+        set(state => ({
+          suppliers: state.suppliers.map(s =>
+            s.id === supplierId ? result.supplier! : s
+          ),
+          currentSupplier: state.currentSupplier?.id === supplierId ? result.supplier : state.currentSupplier,
+          loading: false,
+        }));
+        return { success: true, message: result.message };
+      }
+      set({ error: result.message, loading: false });
+      return { success: false, message: result.message };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '解冻供应商失败';
+      set({ error: errorMessage, loading: false });
+      return { success: false, message: errorMessage };
+    }
+  },
+
   setFilterParams: (params) => {
     set((state) => ({
       filterParams: { ...state.filterParams, ...params },
@@ -262,4 +310,6 @@ export const supplierSelectors = {
   selectCategories: (state: SupplierState & SupplierActions) => state.categories,
   selectCountries: (state: SupplierState & SupplierActions) => state.countries,
   selectRecommendations: (state: SupplierState & SupplierActions) => state.recommendations,
+  selectFrozenSuppliers: (state: SupplierState & SupplierActions) => state.suppliers.filter(s => s.isFrozen),
+  selectFrozenCount: (state: SupplierState & SupplierActions) => state.suppliers.filter(s => s.isFrozen).length,
 };
