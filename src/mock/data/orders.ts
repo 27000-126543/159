@@ -1,3 +1,5 @@
+import type { Region } from '../../utils/constants';
+
 export interface OrderItem {
   productName: string;
   productSpec: string;
@@ -29,7 +31,7 @@ export interface Order {
   inquiryCode: string;
   category: string;
   subCategory: string;
-  region: string;
+  region: Region;
   supplierId: string;
   supplierName: string;
   buyerId: string;

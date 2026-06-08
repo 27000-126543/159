@@ -154,6 +154,12 @@ export const settlementService = {
     await delay(400);
     return settlementData.filter(s => s.supplierId === supplierId);
   },
+
+  async getSettlementByOrderId(orderId: string): Promise<Settlement | null> {
+    await delay(300);
+    const settlement = settlementData.find(s => s.items.some(item => item.orderId === orderId));
+    return settlement || null;
+  },
   
   async createSettlement(data: SettlementCreateData): Promise<Settlement> {
     await delay(800);
@@ -413,7 +419,7 @@ export const settlementService = {
       }
     } else {
       if (existingAlert) {
-        existingAlert.content = `结算单${settlement.code}（供应商：${settlement.supplierName}）部分付款，已付 ${settlement.currency} ${paidAmount.toLocaleString()}，剩余未付 ${settlement.currency} ${settlement.unpaidAmount.toLocaleString()}，供应商仍冻结。`;
+        existingAlert.content = `结算单${settlement.code}（供应商：${settlement.supplierName}）部分付款，累计已付 ${settlement.currency} ${settlement.paidAmount.toLocaleString()}，剩余未付 ${settlement.currency} ${settlement.unpaidAmount.toLocaleString()}，供应商仍冻结。`;
         existingAlert.timestamp = new Date().toISOString();
         existingAlert.isRead = false;
       }

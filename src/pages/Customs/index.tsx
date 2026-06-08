@@ -21,6 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { customsService } from '@/mock/services/customsService';
 import { Customs } from '@/mock/data/customs';
+import { useUserStore } from '@/store/userStore';
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/format';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -88,6 +89,10 @@ export default function CustomsPage() {
   const [payingTax, setPayingTax] = useState(false);
   const [documentType, setDocumentType] = useState('declaration_form');
 
+  const currentUser = useUserStore(state => state.user);
+  const currentUserRole = currentUser?.role;
+  const currentUserRegions = currentUser?.regions;
+
   const fetchCustomsList = async (params: Record<string, unknown> = {}) => {
     setLoading(true);
     try {
@@ -97,7 +102,7 @@ export default function CustomsPage() {
         status: activeTab || undefined,
         page,
         pageSize,
-      });
+      }, currentUserRole, currentUserRegions);
       setCustomsList(result.list);
       setTotal(result.total);
     } finally {

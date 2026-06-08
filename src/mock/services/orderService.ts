@@ -1,10 +1,29 @@
 import { ordersData, Order, OrderItem, ApprovalRecord } from '../data/orders';
 import { customsService, CustomsCreateData } from './customsService';
 import { logisticsService, LogisticsCreateData } from './logisticsService';
+import { settlementService, SettlementCreateData } from './settlementService';
 import { userService } from './userService';
 import { User } from '../data/users';
+import { suppliersData } from '../data/suppliers';
+import { 
+  getRegionByCountry, 
+  STANDARD_REGIONS, 
+  getCarrierByRegion, 
+  getOriginCityByCountry, 
+  determineTransportMethod, 
+  extractCityFromAddress 
+} from '../../utils/constants';
+import type { Region } from '../../utils/constants';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const inferRegionFromSupplier = (supplierId: string): Region => {
+  const supplier = suppliersData.find(s => s.id === supplierId);
+  if (supplier) {
+    return getRegionByCountry(supplier.country);
+  }
+  return '其他';
+};
 
 const generateCustomsDeclaration = (order: Order): CustomsCreateData => {
   const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
@@ -34,21 +53,50 @@ const generateCustomsDeclaration = (order: Order): CustomsCreateData => {
 };
 
 const generateLogisticsPlan = (order: Order): LogisticsCreateData => {
+  const supplier = suppliersData.find(s => s.id === order.supplierId);
+  const originCountry = supplier?.country || '中国';
+  const originRegion = getRegionByCountry(originCountry);
+  const destinationCountry = '中国';
+  const destinationCity = extractCityFromAddress(order.deliveryAddress);
+  
+  const transportMethod = determineTransportMethod(originCountry, destinationCountry, originRegion);
+  const carrierName = getCarrierByRegion(originRegion);
+  const originCity = getOriginCityByCountry(originCountry);
+  
+  let deliveryDays = 14;
+  switch (transportMethod) {
+    case 'air':
+      deliveryDays = 7;
+      break;
+    case 'express':
+      deliveryDays = 5;
+      break;
+    case 'rail':
+      deliveryDays = 21;
+      break;
+    case 'sea':
+      deliveryDays = 30;
+      break;
+    case 'land':
+      deliveryDays = 10;
+      break;
+  }
+  
   return {
     orderId: order.id,
     orderCode: order.code,
     supplierId: order.supplierId,
     supplierName: order.supplierName,
-    transportMethod: 'land',
-    carrierName: '默认物流商',
-    originAddress: order.supplierName,
-    originCity: '上海',
-    originCountry: '中国',
+    transportMethod,
+    carrierName,
+    originAddress: `${supplier?.address || order.supplierName}`,
+    originCity,
+    originCountry,
     destinationAddress: order.deliveryAddress,
-    destinationCity: '上海',
-    destinationCountry: '中国',
-    expectedDepartureDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    expectedArrivalDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    destinationCity,
+    destinationCountry,
+    expectedDepartureDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    expectedArrivalDate: new Date(Date.now() + (3 + deliveryDays) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
     packages: [{
       weight: 100,
       volume: 1,
@@ -65,7 +113,32 @@ const generateLogisticsPlan = (order: Order): LogisticsCreateData => {
     }],
     contactPerson: order.buyerName,
     contactPhone: '13800000000',
-    remark: `系统自动生成，包含${order.items.length}种商品`
+    remark: `系统自动生成，包含${order.items.length}种商品，运输方式：${transportMethod}`
+  };
+};
+
+const generateSettlementFromOrder = (order: Order): SettlementCreateData => {
+  return {
+    supplierId: order.supplierId,
+    supplierName: order.supplierName,
+    settlementType: 'normal',
+    currency: order.currency as 'CNY' | 'USD' | 'EUR' | 'JPY',
+    items: order.items.map(item => ({
+      orderId: order.id,
+      orderCode: order.code,
+      productName: item.productName,
+      productSpec: item.productSpec,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      taxRate: 0.13,
+      remark: ''
+    })),
+    creditPeriod: 30,
+    creditStartDate: new Date().toISOString().split('T')[0],
+    creditDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    operatorId: order.buyerId,
+    operatorName: order.buyerName,
+    remark: `订单${order.code}自动生成结算单`,
   };
 };
 
@@ -125,6 +198,7 @@ export interface OrderQueryParams {
   endDate?: string;
   minAmount?: number;
   maxAmount?: number;
+  region?: string;
   page?: number;
   pageSize?: number;
 }
@@ -141,6 +215,7 @@ export interface OrderCreateData {
   remark?: string;
   buyerId: string;
   buyerName: string;
+  region?: Region;
 }
 
 export interface ApprovalSubmitData {
@@ -200,6 +275,10 @@ export const orderService = {
       result = result.filter(o => o.totalAmount <= params.maxAmount!);
     }
     
+    if (params?.region) {
+      result = result.filter(o => o.region === params.region);
+    }
+    
     result = await applyPermissionFilter(result, currentUserRole, currentUserRegions);
     
     const total = result.length;
@@ -241,7 +320,7 @@ export const orderService = {
       inquiryCode: '',
       category: data.category,
       subCategory: '',
-      region: '华东区',
+      region: data.region || inferRegionFromSupplier(data.supplierId),
       supplierId: data.supplierId,
       supplierName: data.supplierName,
       buyerId: data.buyerId,
@@ -506,6 +585,14 @@ export const orderService = {
     if (oldStatus === 'approved' && newStatus === 'production') {
       const logisticsData = generateLogisticsPlan(order);
       await logisticsService.createLogistics(logisticsData);
+    }
+    
+    if (oldStatus !== 'completed' && newStatus === 'completed') {
+      const existingSettlement = await settlementService.getSettlementByOrderId(order.id);
+      if (!existingSettlement) {
+        const settlementData = generateSettlementFromOrder(order);
+        await settlementService.createSettlement(settlementData);
+      }
     }
     
     return order;

@@ -30,6 +30,7 @@ import {
 import { cn } from '@/lib/utils';
 import { logisticsService } from '@/mock/services/logisticsService';
 import { Logistics } from '@/mock/data/logistics';
+import { useUserStore } from '@/store/userStore';
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/format';
 import { diffDays, getRemainingDays } from '@/utils/date';
 import Card from '@/components/ui/Card';
@@ -114,6 +115,10 @@ export default function LogisticsPage() {
   const [confirming, setConfirming] = useState(false);
   const [signatory, setSignatory] = useState('');
 
+  const currentUser = useUserStore(state => state.user);
+  const currentUserRole = currentUser?.role;
+  const currentUserRegions = currentUser?.regions;
+
   const fetchLogisticsList = async (params: Record<string, unknown> = {}) => {
     setLoading(true);
     try {
@@ -123,7 +128,7 @@ export default function LogisticsPage() {
         status: activeTab || undefined,
         page,
         pageSize,
-      });
+      }, currentUserRole, currentUserRegions);
       setLogisticsList(result.list);
       setTotal(result.total);
     } finally {

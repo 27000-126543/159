@@ -1,7 +1,22 @@
 import { create } from 'zustand';
 import { orderService, OrderQueryParams, OrderCreateData, ApprovalSubmitData } from '@/mock/services/orderService';
+import { customsService } from '@/mock/services/customsService';
+import { logisticsService } from '@/mock/services/logisticsService';
+import { qualityService } from '@/mock/services/qualityService';
+import { settlementService } from '@/mock/services/settlementService';
 import { Order, OrderItem, ApprovalRecord } from '@/mock/data/orders';
+import { Customs } from '@/mock/data/customs';
+import { Logistics } from '@/mock/data/logistics';
+import { QualityInspection } from '@/mock/data/quality';
+import { Settlement } from '@/mock/data/settlement';
 import { useUserStore } from '@/store/userStore';
+
+export interface OrderRelations {
+  customs?: Customs;
+  logistics?: Logistics;
+  inspection?: QualityInspection;
+  settlement?: Settlement;
+}
 
 export interface OrderState {
   orders: Order[];
@@ -15,6 +30,7 @@ export interface OrderState {
   loading: boolean;
   error: string | null;
   filterParams: OrderQueryParams;
+  orderRelations: Record<string, OrderRelations>;
 }
 
 export interface OrderActions {
@@ -27,6 +43,7 @@ export interface OrderActions {
   approveOrder: (data: ApprovalSubmitData) => Promise<{ success: boolean; message: string }>;
   updateOrderStatus: (id: string, status: Order['status']) => Promise<Order | null>;
   fetchStatistics: () => Promise<any>;
+  fetchOrderRelations: (orderId: string) => Promise<OrderRelations>;
   setFilterParams: (params: Partial<OrderQueryParams>) => void;
   setCurrentOrder: (order: Order | null) => void;
   clearError: () => void;
@@ -45,6 +62,7 @@ const initialState: OrderState = {
   loading: false,
   error: null,
   filterParams: {},
+  orderRelations: {},
 };
 
 export const useOrderStore = create<OrderState & OrderActions>((set, get) => ({
@@ -232,6 +250,39 @@ export const useOrderStore = create<OrderState & OrderActions>((set, get) => ({
       const errorMessage = err instanceof Error ? err.message : '获取统计数据失败';
       set({ error: errorMessage, loading: false });
       return null;
+    }
+  },
+
+  fetchOrderRelations: async (orderId) => {
+    set({ loading: true, error: null });
+    try {
+      const [customs, logistics, inspection, settlement] = await Promise.all([
+        customsService.getCustomsByOrderId(orderId),
+        logisticsService.getLogisticsByOrderId(orderId),
+        qualityService.getQualityByOrderId(orderId),
+        settlementService.getSettlementByOrderId(orderId),
+      ]);
+
+      const relations: OrderRelations = {
+        customs: customs || undefined,
+        logistics: logistics || undefined,
+        inspection: inspection || undefined,
+        settlement: settlement || undefined,
+      };
+
+      set((state) => ({
+        orderRelations: {
+          ...state.orderRelations,
+          [orderId]: relations,
+        },
+        loading: false,
+      }));
+
+      return relations;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : '获取关联数据失败';
+      set({ error: errorMessage, loading: false });
+      return {};
     }
   },
 

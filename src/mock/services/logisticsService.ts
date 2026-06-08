@@ -1,13 +1,30 @@
 import { logistics as logisticsData, Logistics, Package, TrackingEvent } from '../data/logistics';
+import { suppliersData } from '../data/suppliers';
+import { getRegionByCountry } from '../../utils/constants';
+import type { Region } from '../../utils/constants';
+import { orderService } from './orderService';
+import { userService } from './userService';
+import type { User } from '../data/users';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const inferRegionFromSupplier = (supplierId: string): Region => {
+  const supplier = suppliersData.find(s => s.id === supplierId);
+  if (supplier) {
+    return getRegionByCountry(supplier.country);
+  }
+  return '其他';
+};
 
 export interface LogisticsQueryParams {
   keyword?: string;
   status?: string;
   transportMethod?: string;
   orderId?: string;
+  orderCode?: string;
   supplierId?: string;
+  supplierName?: string;
+  region?: string;
   startDate?: string;
   endDate?: string;
   page?: number;
@@ -29,7 +46,7 @@ export interface LogisticsCreateData {
   destinationCountry: string;
   expectedDepartureDate: string;
   expectedArrivalDate: string;
-  packages: Omit<Package, 'id' | 'trackingEvents' | 'status'>[];
+  packages: Omit<Package, 'id'>[];
   contactPerson: string;
   contactPhone: string;
   remark?: string;
@@ -49,8 +66,61 @@ export interface TrackingSubmitData {
   exceptionDescription?: string;
 }
 
+const applyPermissionFilter = async (
+  list: Logistics[],
+  currentUserRole?: string,
+  currentUserRegions?: string[]
+): Promise<Logistics[]> => {
+  try {
+    const user = currentUserRole
+      ? { role: currentUserRole as User['role'], regions: currentUserRegions }
+      : await userService.getCurrentUser();
+    if (!user) return list;
+
+    switch (user.role) {
+      case 'ceo':
+      case 'admin':
+        return list;
+
+      case 'finance':
+      case 'quality':
+        return list;
+
+      case 'director':
+        if (!user.regions || user.regions.length === 0 || user.regions.includes('*')) return list;
+        return list.filter(logistics =>
+          user.regions!.includes(logistics.region)
+        );
+
+      case 'supplier':
+        const currentUser = await userService.getCurrentUser();
+        if (!currentUser?.supplierId) return [];
+        return list.filter(logistics => logistics.supplierId === currentUser.supplierId);
+
+      case 'buyer':
+        const buyerUser = await userService.getCurrentUser();
+        if (!buyerUser?.categories || buyerUser.categories.length === 0) return list;
+        return list;
+
+      case 'manager':
+        const managerUser = await userService.getCurrentUser();
+        if (!managerUser?.department) return list;
+        return list;
+
+      default:
+        return list;
+    }
+  } catch {
+    return list;
+  }
+};
+
 export const logisticsService = {
-  async getLogisticsList(params?: LogisticsQueryParams): Promise<{
+  async getLogisticsList(
+    params?: LogisticsQueryParams,
+    currentUserRole?: string,
+    currentUserRegions?: string[]
+  ): Promise<{
     list: Logistics[];
     total: number;
     page: number;
@@ -65,7 +135,8 @@ export const logisticsService = {
       result = result.filter(
         l => l.trackingNo.toLowerCase().includes(keyword) ||
              l.carrier.toLowerCase().includes(keyword) ||
-             l.orderCode.toLowerCase().includes(keyword)
+             l.orderCode.toLowerCase().includes(keyword) ||
+             l.supplierName.toLowerCase().includes(keyword)
       );
     }
     
@@ -81,8 +152,20 @@ export const logisticsService = {
       result = result.filter(l => l.orderId === params.orderId);
     }
     
+    if (params?.orderCode) {
+      result = result.filter(l => l.orderCode.toLowerCase().includes(params.orderCode!.toLowerCase()));
+    }
+    
     if (params?.supplierId) {
       result = result.filter(l => l.supplierId === params.supplierId);
+    }
+    
+    if (params?.supplierName) {
+      result = result.filter(l => l.supplierName.toLowerCase().includes(params.supplierName!.toLowerCase()));
+    }
+    
+    if (params?.region) {
+      result = result.filter(l => l.region === params.region);
     }
     
     if (params?.startDate) {
@@ -92,6 +175,8 @@ export const logisticsService = {
     if (params?.endDate) {
       result = result.filter(l => l.createdAt <= params.endDate!);
     }
+    
+    result = await applyPermissionFilter(result, currentUserRole, currentUserRegions);
     
     const total = result.length;
     const page = params?.page || 1;
@@ -134,6 +219,12 @@ export const logisticsService = {
       express: '快递',
     };
     
+    let region: Region = '其他';
+    const order = await orderService.getOrderById(data.orderId);
+    if (order && 'region' in order) {
+      region = (order as any).region;
+    }
+    
     const packages: Package[] = data.packages.map((pkg, index) => ({
       id: `PKG${newId}-${index + 1}`,
       ...pkg,
@@ -157,6 +248,7 @@ export const logisticsService = {
       orderCode: data.orderCode,
       supplierId: data.supplierId,
       supplierName: data.supplierName,
+      region: region || inferRegionFromSupplier(data.supplierId),
       planNo: '',
       planName: '',
       transportMode: data.transportMethod,

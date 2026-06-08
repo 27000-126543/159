@@ -12,6 +12,7 @@ export const getCurrentUser = async (): Promise<User | null> => {
 export const applyInquiryPermissionFilter = async <T extends {
   category: string;
   department: string;
+  region: string;
   quotes?: Array<{ supplierId: string }>;
 }>(list: T[]): Promise<T[]> => {
   const user = await getCurrentUser();
@@ -43,7 +44,10 @@ export const applyInquiryPermissionFilter = async <T extends {
       );
 
     case 'director':
-      return list;
+      if (!user.regions || user.regions.length === 0 || user.regions.includes('*')) return list;
+      return list.filter(inquiry =>
+        user.regions!.includes(inquiry.region)
+      );
 
     default:
       return list;
@@ -54,6 +58,7 @@ export const applyOrderPermissionFilter = async <T extends {
   category: string;
   department: string;
   supplierId: string;
+  region: string;
 }>(list: T[]): Promise<T[]> => {
   const user = await getCurrentUser();
   if (!user) return list;
@@ -82,7 +87,10 @@ export const applyOrderPermissionFilter = async <T extends {
       );
 
     case 'director':
-      return list;
+      if (!user.regions || user.regions.length === 0 || user.regions.includes('*')) return list;
+      return list.filter(order =>
+        user.regions!.includes(order.region)
+      );
 
     default:
       return list;
@@ -93,6 +101,7 @@ export const applySupplierPermissionFilter = async <T extends {
   id: string;
   category: string;
   country: string;
+  region: string;
 }>(list: T[]): Promise<T[]> => {
   const user = await getCurrentUser();
   if (!user) return list;
@@ -102,10 +111,15 @@ export const applySupplierPermissionFilter = async <T extends {
     case 'admin':
     case 'finance':
     case 'quality':
-    case 'director':
     case 'manager':
     case 'buyer':
       return list;
+
+    case 'director':
+      if (!user.regions || user.regions.length === 0 || user.regions.includes('*')) return list;
+      return list.filter(supplier =>
+        user.regions!.includes(supplier.region)
+      );
 
     case 'supplier':
       if (!user.supplierId) return [];

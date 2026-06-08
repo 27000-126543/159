@@ -1,3 +1,7 @@
+import { STANDARD_REGIONS } from '../utils/constants';
+
+export type Region = typeof STANDARD_REGIONS[number];
+
 export type UserRole = 'supplier' | 'buyer' | 'manager' | 'director' | 'ceo' | 'finance' | 'quality' | 'admin';
 
 export interface UserInfo {
@@ -53,7 +57,7 @@ export interface Supplier {
   id: string;
   name: string;
   category: string;
-  region: string;
+  region: Region;
   country: string;
   qualification: string[];
   qualifications?: SupplierQualification[];
@@ -169,6 +173,7 @@ export interface Order {
   shippingAddress: string;
   paymentTerms: string;
   status: OrderStatus;
+  region: Region;
   approvalRecords: ApprovalRecord[];
   createdAt: string;
   createdBy: string;
@@ -190,6 +195,7 @@ export interface CustomsDeclaration {
   id: string;
   orderId: string;
   declarationNo: string;
+  region: string;
   goodsDescription: string;
   hsCode: string;
   declaredValue: number;
@@ -217,6 +223,7 @@ export interface Shipment {
   id: string;
   orderId: string;
   trackingNo: string;
+  region: string;
   carrier: string;
   shippingMethod: string;
   departurePort: string;
@@ -336,7 +343,7 @@ export interface CategoryData {
 }
 
 export interface RegionData {
-  region: string;
+  region: Region;
   country?: string;
   amount: number;
   percentage: number;
@@ -401,7 +408,7 @@ export interface CategoryAnalysis {
 }
 
 export interface RegionAnalysis {
-  region: string;
+  region: Region;
   country: string;
   countryCode: string;
   purchaseAmount: number;

@@ -1,3 +1,5 @@
+import type { Region } from '../../utils/constants';
+
 export interface TrackingEvent {
   id: string;
   timestamp: string;
@@ -36,6 +38,7 @@ export interface Logistics {
   orderCode: string;
   supplierId: string;
   supplierName: string;
+  region: Region;
   planNo: string;
   planName: string;
   transportMode: 'air' | 'sea' | 'land' | 'rail' | 'express';
@@ -98,6 +101,7 @@ export const logistics: Logistics[] = [
     orderCode: 'PO-2024-0002',
     supplierId: 'S004',
     supplierName: '索尼集团',
+    region: '亚太',
     planNo: 'PLAN-2024-0001',
     planName: '图像传感器空运计划',
     transportMode: 'air',
@@ -251,6 +255,7 @@ export const logistics: Logistics[] = [
     orderCode: 'PO-2024-0012',
     supplierId: 'S014',
     supplierName: '杜邦公司',
+    region: '亚太',
     planNo: 'PLAN-2024-0002',
     planName: '化工原料海运计划',
     transportMode: 'sea',
@@ -368,6 +373,7 @@ export const logistics: Logistics[] = [
     orderCode: 'PO-2024-0006',
     supplierId: 'S006',
     supplierName: '宝钢股份有限公司',
+    region: '亚太',
     planNo: 'PLAN-2024-0003',
     planName: '不锈钢板材陆运计划',
     transportMode: 'land',
@@ -485,6 +491,7 @@ export const logistics: Logistics[] = [
     orderCode: 'PO-2024-0001',
     supplierId: 'S001',
     supplierName: '深圳华为技术有限公司',
+    region: '亚太',
     planNo: 'PLAN-2024-0004',
     planName: '芯片快递运输计划',
     transportMode: 'express',
@@ -614,6 +621,7 @@ export const logistics: Logistics[] = [
     orderCode: 'PO-2024-0007',
     supplierId: 'S008',
     supplierName: '英飞凌科技',
+    region: '亚太',
     planNo: 'PLAN-2024-0005',
     planName: 'IGBT模块空运计划',
     transportMode: 'air',
@@ -753,6 +761,7 @@ export const logistics: Logistics[] = [
     orderCode: 'PO-2024-0004',
     supplierId: 'S007',
     supplierName: '施耐德电气',
+    region: '欧洲',
     planNo: 'PLAN-2024-0006',
     planName: '低压电器快递计划',
     transportMode: 'express',
@@ -870,6 +879,7 @@ export const logistics: Logistics[] = [
     orderCode: 'PO-2024-0014',
     supplierId: 'S017',
     supplierName: '中国铝业集团',
+    region: '欧洲',
     planNo: 'PLAN-2024-0007',
     planName: '铝锭铁路运输计划',
     transportMode: 'rail',
@@ -987,6 +997,7 @@ export const logistics: Logistics[] = [
     orderCode: 'PO-2024-0013',
     supplierId: 'S015',
     supplierName: '松下电器',
+    region: '亚太',
     planNo: 'PLAN-2024-0008',
     planName: '电子元件快递计划',
     transportMode: 'express',
@@ -1094,6 +1105,7 @@ export const logistics: Logistics[] = [
     orderCode: 'PO-2024-0010',
     supplierId: 'S011',
     supplierName: '天津钢管集团',
+    region: '北美',
     planNo: 'PLAN-2024-0009',
     planName: '无缝钢管陆运计划',
     transportMode: 'land',
@@ -1181,6 +1193,7 @@ export const logistics: Logistics[] = [
     orderCode: 'PO-2024-0009',
     supplierId: 'S010',
     supplierName: '三菱电机',
+    region: '欧洲',
     planNo: 'PLAN-2024-0010',
     planName: '工业机器人海运计划',
     transportMode: 'sea',

@@ -1,3 +1,5 @@
+import type { Region } from '../../utils/constants';
+
 export interface CustomsDocument {
   type: string;
   name: string;
@@ -21,6 +23,7 @@ export interface Customs {
   orderCode: string;
   supplierId: string;
   supplierName: string;
+  region: Region;
   goodsName: string;
   goodsDescription: string;
   hsCode: string;
@@ -69,6 +72,7 @@ export const customs: Customs[] = [
     orderCode: 'PO-2024-0002',
     supplierId: 'S004',
     supplierName: '索尼集团',
+    region: '亚太',
     goodsName: 'CMOS图像传感器',
     goodsDescription: '12MP CMOS图像传感器，型号IMX577，用于智能手机摄像头模组',
     hsCode: '85414020',
@@ -122,6 +126,7 @@ export const customs: Customs[] = [
     orderCode: 'PO-2024-0012',
     supplierId: 'S014',
     supplierName: '杜邦公司',
+    region: '亚太',
     goodsName: '聚四氟乙烯粉末',
     goodsDescription: 'PTFE悬浮级粉末，用于高端密封件生产',
     hsCode: '39046100',
@@ -175,6 +180,7 @@ export const customs: Customs[] = [
     orderCode: 'PO-2024-0003',
     supplierId: 'S002',
     supplierName: '西门子（中国）有限公司',
+    region: '亚太',
     goodsName: 'PLC控制器',
     goodsDescription: 'S7-1500系列PLC控制器，用于工业自动化生产线',
     hsCode: '85371011',
@@ -224,6 +230,7 @@ export const customs: Customs[] = [
     orderCode: 'PO-2024-0011',
     supplierId: 'S018',
     supplierName: '博世集团',
+    region: '亚太',
     goodsName: 'ESP控制器',
     goodsDescription: '博世8.1版ESP车身电子稳定系统控制器',
     hsCode: '87089999',
@@ -276,6 +283,7 @@ export const customs: Customs[] = [
     orderCode: 'PO-2024-0005',
     supplierId: 'S005',
     supplierName: '三星电子',
+    region: '北美',
     goodsName: 'DDR4存储器芯片',
     goodsDescription: 'DDR4 16GB 3200MHz SDRAM芯片',
     hsCode: '85423100',
@@ -322,6 +330,7 @@ export const customs: Customs[] = [
     orderCode: 'PO-2024-0007',
     supplierId: 'S008',
     supplierName: '英飞凌科技',
+    region: '亚太',
     goodsName: 'IGBT模块',
     goodsDescription: 'Infineon FF450R12ME4 IGBT模块，用于新能源汽车逆变器',
     hsCode: '85414090',
@@ -374,6 +383,7 @@ export const customs: Customs[] = [
     orderCode: 'PO-2024-0015',
     supplierId: 'S016',
     supplierName: '法雷奥集团',
+    region: '北美',
     goodsName: '毫米波雷达传感器',
     goodsDescription: '77GHz中距离毫米波雷达，用于智能驾驶ADAS系统',
     hsCode: '85269190',
@@ -423,6 +433,7 @@ export const customs: Customs[] = [
     orderCode: 'PO-2024-0001',
     supplierId: 'S001',
     supplierName: '深圳华为技术有限公司',
+    region: '亚太',
     goodsName: 'ARM微控制器芯片',
     goodsDescription: 'STM32系列32位微控制器芯片',
     hsCode: '85423100',
@@ -474,6 +485,7 @@ export const customs: Customs[] = [
     orderCode: 'PO-2024-0006',
     supplierId: 'S006',
     supplierName: '宝钢股份有限公司',
+    region: '亚太',
     goodsName: '不锈钢板材',
     goodsDescription: '316L不锈钢板材，3mm厚度',
     hsCode: '72193390',
@@ -520,6 +532,7 @@ export const customs: Customs[] = [
     orderCode: 'PO-2024-0009',
     supplierId: 'S010',
     supplierName: '三菱电机',
+    region: '欧洲',
     goodsName: '六轴工业机器人',
     goodsDescription: 'MELFA RV-20FR六轴工业机器人，负载20kg',
     hsCode: '84289010',

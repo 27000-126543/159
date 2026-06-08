@@ -1,3 +1,5 @@
+import type { Region } from '../../utils/constants';
+
 export interface KPI {
   id: string;
   name: string;
@@ -31,7 +33,7 @@ export interface CategoryAnalysis {
 }
 
 export interface RegionAnalysis {
-  region: string;
+  region: Region;
   country: string;
   countryCode: string;
   purchaseAmount: number;
@@ -214,9 +216,9 @@ export const dashboard: DashboardData = {
   regionAnalysis: [
     { region: '亚太', country: '中国', countryCode: 'CN', purchaseAmount: 68500000, orderCount: 82, supplierCount: 10, avgDeliveryDays: 12, proportion: 54.5, lat: 35.8617, lng: 104.1954 },
     { region: '欧洲', country: '德国', countryCode: 'DE', purchaseAmount: 18500000, orderCount: 18, supplierCount: 3, avgDeliveryDays: 35, proportion: 14.7, lat: 51.1657, lng: 10.4515 },
-    { region: '亚洲', country: '日本', countryCode: 'JP', purchaseAmount: 12800000, orderCount: 15, supplierCount: 2, avgDeliveryDays: 28, proportion: 10.2, lat: 36.2048, lng: 138.2529 },
+    { region: '亚太', country: '日本', countryCode: 'JP', purchaseAmount: 12800000, orderCount: 15, supplierCount: 2, avgDeliveryDays: 28, proportion: 10.2, lat: 36.2048, lng: 138.2529 },
     { region: '北美', country: '美国', countryCode: 'US', purchaseAmount: 10500000, orderCount: 12, supplierCount: 2, avgDeliveryDays: 42, proportion: 8.3, lat: 37.0902, lng: -95.7129 },
-    { region: '亚洲', country: '韩国', countryCode: 'KR', purchaseAmount: 8500000, orderCount: 10, supplierCount: 1, avgDeliveryDays: 25, proportion: 6.8, lat: 35.9078, lng: 127.7669 },
+    { region: '亚太', country: '韩国', countryCode: 'KR', purchaseAmount: 8500000, orderCount: 10, supplierCount: 1, avgDeliveryDays: 25, proportion: 6.8, lat: 35.9078, lng: 127.7669 },
     { region: '欧洲', country: '瑞士', countryCode: 'CH', purchaseAmount: 5200000, orderCount: 8, supplierCount: 1, avgDeliveryDays: 38, proportion: 4.1, lat: 46.8182, lng: 8.2275 },
     { region: '欧洲', country: '法国', countryCode: 'FR', purchaseAmount: 1800000, orderCount: 6, supplierCount: 1, avgDeliveryDays: 36, proportion: 1.4, lat: 46.2276, lng: 2.2137 }
   ],

@@ -21,30 +21,10 @@ import Input from '@/components/ui/Input';
 import Select from '@/components/ui/Select';
 import Badge from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
+import { COUNTRY_TO_REGION, getRegionByCountry } from '@/utils/constants';
+import type { Region } from '@/utils/constants';
 
-const countryToRegion: Record<string, string> = {
-  '中国': '亚太',
-  '日本': '亚太',
-  '韩国': '亚太',
-  '新加坡': '亚太',
-  '印度': '亚太',
-  '澳大利亚': '亚太',
-  '德国': '欧洲',
-  '法国': '欧洲',
-  '英国': '欧洲',
-  '意大利': '欧洲',
-  '西班牙': '欧洲',
-  '荷兰': '欧洲',
-  '瑞士': '欧洲',
-  '瑞典': '欧洲',
-  '美国': '北美',
-  '加拿大': '北美',
-  '墨西哥': '北美',
-  '巴西': '南美',
-  '阿根廷': '南美',
-  '南非': '非洲',
-  '埃及': '非洲',
-};
+const countryToRegion: Record<string, Region> = COUNTRY_TO_REGION;
 
 const steps = [
   { key: 'basic', label: '基本信息', icon: Building2, description: '填写企业基本信息' },

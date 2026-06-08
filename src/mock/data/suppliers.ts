@@ -1,3 +1,5 @@
+import type { Region } from '../../utils/constants';
+
 export interface Supplier {
   id: string;
   code: string;
@@ -7,7 +9,7 @@ export interface Supplier {
   subCategory: string;
   country: string;
   countryCode: string;
-  region: string;
+  region: Region;
   city: string;
   address: string;
   contactPerson: string;

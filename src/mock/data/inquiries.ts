@@ -1,3 +1,5 @@
+import type { Region } from '../../utils/constants';
+
 export interface QuoteItem {
   productName: string;
   productSpec: string;
@@ -47,7 +49,7 @@ export interface Inquiry {
   title: string;
   category: string;
   subCategory: string;
-  region: string;
+  region: Region;
   requesterId: string;
   requesterName: string;
   department: string;

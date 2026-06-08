@@ -20,7 +20,11 @@ import {
   Clock,
   AlertTriangle,
   Camera,
+  FileCheck,
+  Plus,
+  ChevronRight,
 } from 'lucide-react';
+import { OrderRelations } from '@/store/orderStore';
 import { cn } from '@/lib/utils';
 import { useOrderStore } from '@/store/orderStore';
 import { formatCurrency, formatDate, formatDateTime } from '@/utils/format';
@@ -134,17 +138,25 @@ const getApprovalNodes = (order: Order): ApprovalNode[] => {
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { currentOrder, loading, fetchOrderById, updateOrderStatus } = useOrderStore();
+  const { currentOrder, loading, fetchOrderById, updateOrderStatus, fetchOrderRelations, orderRelations } = useOrderStore();
   const [activeTab, setActiveTab] = useState('info');
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showQrModal, setShowQrModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [relations, setRelations] = useState<OrderRelations>({});
 
   useEffect(() => {
     if (id) {
       fetchOrderById(id);
+      fetchOrderRelations(id).then(setRelations);
     }
   }, [id]);
+
+  useEffect(() => {
+    if (id && orderRelations[id]) {
+      setRelations(orderRelations[id]);
+    }
+  }, [id, orderRelations]);
 
   const orderLogistics = useMemo(() => {
     return logistics.find(l => l.orderId === id);
@@ -201,6 +213,57 @@ export default function OrderDetailPage() {
     const result = await updateOrderStatus(currentOrder.id, 'delivered');
     if (result) {
       setShowReceiptModal(false);
+      if (id) {
+        fetchOrderRelations(id).then(setRelations);
+      }
+    }
+  };
+
+  const handleViewCustoms = () => {
+    if (relations.customs) {
+      navigate(`/customs`);
+    }
+  };
+
+  const handleViewLogistics = () => {
+    if (relations.logistics) {
+      navigate(`/logistics`);
+    }
+  };
+
+  const handleCreateLogistics = () => {
+    alert('生成物流计划功能开发中');
+  };
+
+  const handleCreateQuality = () => {
+    navigate(`/quality/new?orderId=${id}`);
+  };
+
+  const handleViewQuality = () => {
+    if (relations.inspection) {
+      navigate(`/quality`);
+    }
+  };
+
+  const handleViewOrCreateSettlement = async () => {
+    if (!currentOrder) return;
+    
+    if (relations.settlement) {
+      navigate(`/settlement`);
+    } else {
+      const result = await updateOrderStatus(currentOrder.id, 'completed');
+      if (result && id) {
+        fetchOrderRelations(id).then(setRelations);
+        navigate(`/settlement`);
+      }
+    }
+  };
+
+  const handleMarkCompleted = async () => {
+    if (!currentOrder) return;
+    const result = await updateOrderStatus(currentOrder.id, 'completed');
+    if (result && id) {
+      fetchOrderRelations(id).then(setRelations);
     }
   };
 
@@ -353,6 +416,224 @@ export default function OrderDetailPage() {
             )}
           </div>
         </div>
+      </Card>
+
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+            <FileBarChart className="w-5 h-5 text-primary-500" />
+            关联进度
+          </h3>
+        </div>
+
+        {currentOrder?.status === 'pending_approval' && (
+          <div className="space-y-4">
+            <div className="p-4 bg-primary-50 rounded-lg">
+              <div className="flex items-center gap-3 mb-2">
+                <ClipboardCheck className="w-5 h-5 text-primary-500" />
+                <span className="font-medium text-slate-900">审批进度</span>
+                {currentOrder.isLargeAmount && (
+                  <Badge variant="warning" className="text-xs">
+                    <AlertTriangle className="w-3 h-3 mr-1" />
+                    大额订单
+                  </Badge>
+                )}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
+                <div className="bg-white p-3 rounded-lg">
+                  <p className="text-xs text-slate-500 mb-1">当前节点</p>
+                  <p className="font-medium text-slate-900">{currentOrder.currentApprovalNode || '-'}</p>
+                </div>
+                <div className="bg-white p-3 rounded-lg">
+                  <p className="text-xs text-slate-500 mb-1">下一节点</p>
+                  <p className="font-medium text-slate-700">{currentOrder.nextApprovalNode || '-'}</p>
+                </div>
+                <div className="bg-white p-3 rounded-lg">
+                  <p className="text-xs text-slate-500 mb-1">审批进度</p>
+                  <p className="font-medium text-primary-600">{currentOrder.progress}%</p>
+                </div>
+                <div className="bg-white p-3 rounded-lg">
+                  <p className="text-xs text-slate-500 mb-1">大额标识</p>
+                  <p className={`font-medium ${currentOrder.isLargeAmount ? 'text-warning-600' : 'text-slate-600'}`}>
+                    {currentOrder.isLargeAmount ? '是' : '否'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {(currentOrder?.status === 'approved' || currentOrder?.status === 'production' || 
+          currentOrder?.status === 'shipping' || currentOrder?.status === 'delivered' ||
+          currentOrder?.status === 'completed') && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div 
+              className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                relations.customs 
+                  ? 'bg-success-50 border-success-200 hover:border-success-400' 
+                  : 'bg-slate-50 border-slate-200'
+              }`}
+              onClick={relations.customs ? handleViewCustoms : undefined}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <FileText className={`w-6 h-6 ${relations.customs ? 'text-success-500' : 'text-slate-400'}`} />
+                {relations.customs && (
+                  <CheckCircle className="w-5 h-5 text-success-500" />
+                )}
+              </div>
+              <p className={`font-medium ${relations.customs ? 'text-slate-900' : 'text-slate-500'}`}>
+                报关单
+              </p>
+              <p className="text-xs text-slate-500 mt-1">
+                {relations.customs ? relations.customs.code : '未生成'}
+              </p>
+              {relations.customs && (
+                <div className="flex items-center gap-1 mt-2 text-xs text-success-600">
+                  <span>查看详情</span>
+                  <ChevronRight className="w-3 h-3" />
+                </div>
+              )}
+            </div>
+
+            {currentOrder.status === 'approved' && !relations.logistics && (
+              <div 
+                className="p-4 rounded-lg border-2 border-dashed border-primary-300 bg-primary-50 cursor-pointer hover:bg-primary-100 transition-all hover:shadow-md"
+                onClick={handleCreateLogistics}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <Truck className="w-6 h-6 text-primary-500" />
+                  <Plus className="w-5 h-5 text-primary-500" />
+                </div>
+                <p className="font-medium text-primary-700">生成物流计划</p>
+                <p className="text-xs text-primary-500 mt-1">待生产</p>
+                <div className="flex items-center gap-1 mt-2 text-xs text-primary-600">
+                  <span>点击生成</span>
+                  <ChevronRight className="w-3 h-3" />
+                </div>
+              </div>
+            )}
+
+            {(currentOrder.status === 'production' || currentOrder.status === 'shipping' || 
+              currentOrder.status === 'delivered' || currentOrder.status === 'completed') && (
+              <div 
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                  relations.logistics 
+                    ? 'bg-success-50 border-success-200 hover:border-success-400' 
+                    : 'bg-slate-50 border-slate-200'
+                }`}
+                onClick={relations.logistics ? handleViewLogistics : undefined}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <Truck className={`w-6 h-6 ${relations.logistics ? 'text-success-500' : 'text-slate-400'}`} />
+                  {relations.logistics && (
+                    <CheckCircle className="w-5 h-5 text-success-500" />
+                  )}
+                </div>
+                <p className={`font-medium ${relations.logistics ? 'text-slate-900' : 'text-slate-500'}`}>
+                  物流计划
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {relations.logistics ? relations.logistics.code : '未生成'}
+                </p>
+                {relations.logistics && (
+                  <div className="flex items-center gap-1 mt-2 text-xs text-success-600">
+                    <span>查看详情</span>
+                    <ChevronRight className="w-3 h-3" />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {currentOrder.status === 'delivered' && (
+              <div 
+                className="p-4 rounded-lg border-2 border-dashed border-warning-300 bg-warning-50 cursor-pointer hover:bg-warning-100 transition-all hover:shadow-md"
+                onClick={handleCreateQuality}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <ShieldCheck className="w-6 h-6 text-warning-600" />
+                  <Plus className="w-5 h-5 text-warning-600" />
+                </div>
+                <p className="font-medium text-warning-700">发起质检</p>
+                <p className="text-xs text-warning-500 mt-1">待质检</p>
+                <div className="flex items-center gap-1 mt-2 text-xs text-warning-600">
+                  <span>点击发起</span>
+                  <ChevronRight className="w-3 h-3" />
+                </div>
+              </div>
+            )}
+
+            {(currentOrder.status === 'delivered' || currentOrder.status === 'completed') && 
+              relations.inspection && (
+              <div 
+                className="p-4 rounded-lg border-2 bg-success-50 border-success-200 cursor-pointer hover:border-success-400 transition-all hover:shadow-md"
+                onClick={handleViewQuality}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <ShieldCheck className="w-6 h-6 text-success-500" />
+                  <CheckCircle className="w-5 h-5 text-success-500" />
+                </div>
+                <p className="font-medium text-slate-900">质检报告</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {relations.inspection.code}
+                </p>
+                <div className="flex items-center gap-1 mt-2 text-xs text-success-600">
+                  <span>查看详情</span>
+                  <ChevronRight className="w-3 h-3" />
+                </div>
+              </div>
+            )}
+
+            {currentOrder.status === 'completed' && (
+              <div 
+                className={`p-4 rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                  relations.settlement 
+                    ? 'bg-success-50 border-success-200 hover:border-success-400' 
+                    : 'bg-primary-50 border-dashed border-primary-300 hover:bg-primary-100'
+                }`}
+                onClick={handleViewOrCreateSettlement}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <DollarSign className={`w-6 h-6 ${relations.settlement ? 'text-success-500' : 'text-primary-500'}`} />
+                  {relations.settlement ? (
+                    <CheckCircle className="w-5 h-5 text-success-500" />
+                  ) : (
+                    <Plus className="w-5 h-5 text-primary-500" />
+                  )}
+                </div>
+                <p className={`font-medium ${relations.settlement ? 'text-slate-900' : 'text-primary-700'}`}>
+                  {relations.settlement ? '查看结算单' : '生成结算单'}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {relations.settlement ? relations.settlement.code : '待生成'}
+                </p>
+                <div className={`flex items-center gap-1 mt-2 text-xs ${
+                  relations.settlement ? 'text-success-600' : 'text-primary-600'
+                }`}>
+                  <span>{relations.settlement ? '查看详情' : '点击生成'}</span>
+                  <ChevronRight className="w-3 h-3" />
+                </div>
+              </div>
+            )}
+
+            {currentOrder.status === 'delivered' && !relations.inspection && (
+              <div 
+                className="p-4 rounded-lg border-2 border-dashed border-success-300 bg-success-50 cursor-pointer hover:bg-success-100 transition-all hover:shadow-md"
+                onClick={handleMarkCompleted}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <FileCheck className="w-6 h-6 text-success-600" />
+                  <CheckCircle className="w-5 h-5 text-success-600" />
+                </div>
+                <p className="font-medium text-success-700">标记完成</p>
+                <p className="text-xs text-success-500 mt-1">无需质检</p>
+                <div className="flex items-center gap-1 mt-2 text-xs text-success-600">
+                  <span>点击完成</span>
+                  <ChevronRight className="w-3 h-3" />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </Card>
 
       <Card padding="none">
